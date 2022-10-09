@@ -134,12 +134,12 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Puzzle15.c" />
-    <ClCompile Include="methods.c" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Puzzle15.rc" />
   </ItemGroup>
   <ItemGroup>
+    <Image Include="15.ico" />
     <Image Include="Puzzle15.ico" />
     <Image Include="small.ico" />
   </ItemGroup>

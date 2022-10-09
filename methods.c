@@ -1,17 +1,16 @@
 #include <stdio.h>
 #include <stdlib.h> //Содержит функции randomize и random
 #include <conio.h> //Содержит функции clrscr и getch
-#include <cstdlib>
 
-int TRUE = 1;
-int FALSE = 0;
+#define TRUE 1;
+#define FALSE 0;
 
 enum Direction { LEFT, UP, RIGHT, DOWN };
 
 int Field[4][4];
 int EmptyX, EmptyY;
 
-void CreateField()
+void EXGenerateField()
 {
     int NumIsFree[15]; //NumIsFree[i] показывает, определили ли мы уже позицию i-й костяшки
     int Nums[15]; //Nums[i] содержит номер костяшки, находящейся в i-й позиции
@@ -53,46 +52,6 @@ void CreateField()
         Field[i % 4][i / 4] = Nums[i]; //a % b - остаток от деления a на b
     Field[3][3] = 0;
     EmptyX = 3; EmptyY = 3;
-}
-
-void DrawField() //Вариант, подходящий для всех реализаций
-{
-    //Очищаем экран
-    system("cls");
-    Sleep(1000);
-
-    for (int j = 0; j < 4; j++) //Рисуем построчно четыре горизонтальных ряда костяшек
-    {
-        for (int i = 0; i < 4; i++) //Рисуем верхнюю часть ряда
-        {
-            if (Field[i][j])
-                printf("++++");
-            else
-                printf("    ");
-        }
-        printf("\n");
-        for (int i = 0; i < 4; i++) //Рисуем среднюю часть ряда (с номерами)
-        {
-            if (Field[i][j])
-            {
-                printf("+");
-                //std::cout.width(2);
-                printf("%d", &Field[i][j]);
-                printf("+");
-            }
-            else
-                printf("    ");
-        }
-        printf("\n");
-        for (int i = 0; i < 4; i++) //Рисуем нижнюю часть ряда
-        {
-            if (Field[i][j])
-                printf("++++");
-            else
-                printf("    ");
-        }
-        printf("\n");
-    }
 }
 
 void Move(enum Direction dir)
@@ -145,8 +104,7 @@ int FieldIsCorrect()
             return FALSE; //При первом же нахождении несоответствия выходим и возвращаем false
     return TRUE;//Если не найдено ни одного несоответствия - поле собрано верно
 }
-
-int Exmain()
+/*int main()
 {
     CreateField(); //Генерация поля
     DrawField(); //Первоначальное рисование поля
@@ -167,4 +125,4 @@ int Exmain()
     }
     printf("\n\nCongratulations! Press Enter to exit!"); //Поздравление игрока
     //getchar(); //Ждем ввода строки и нажатия Enter перед выходом
-}
+}*/

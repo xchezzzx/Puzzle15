@@ -32,9 +32,6 @@
     <ClCompile Include="Puzzle15.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="methods.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Puzzle15.rc">
@@ -46,6 +43,9 @@
       <Filter>Resource Files</Filter>
     </Image>
     <Image Include="Puzzle15.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="15.ico">
       <Filter>Resource Files</Filter>
     </Image>
   </ItemGroup>

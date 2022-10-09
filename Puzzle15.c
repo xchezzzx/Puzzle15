@@ -1,13 +1,39 @@
-#include "framework.h"
+#include <stdio.h>
+#include <stdlib.h> //Содержит функции randomize и random
+
+#include "windows.h"
+#include "commctrl.h"
 #include "Puzzle15.h"
-#include "methods.c"
+//#include "methods.c"
 
 #define MAX_LOADSTRING 100
+#define SIZE 16
+#define WIDTH 200
+#define SPACE 10
+
+typedef struct
+{
+    RECT TileRect;
+    int TileNum;
+    //wchar_t* TileName;
+} Tile;
 
 // Global Variables:
+
+
 HINSTANCE hInst;                                // current instance
-WCHAR szTitle[MAX_LOADSTRING];                  // The title bar text
-WCHAR szWindowClass[MAX_LOADSTRING];            // the main window class name
+WCHAR szTitle[MAX_LOADSTRING] = L"The Puzzle of 15";                  // The title bar text
+WCHAR szWindowClass[MAX_LOADSTRING] = TEXT("GameWnd");            // the main window class name
+
+RECT ClientArea;                    //size of client area in window
+Tile TilesArray[4][4];               //array of tiles for field
+
+//int FieldInt[4][4];                 //array of puzzle numbers
+Tile EmptyTile;
+int EmptyX, EmptyY;                     //coordinates of empty place
+int movesCount = 0;
+
+enum Direction { LEFT, UP, RIGHT, DOWN };
 
 // Forward declarations of functions included in this code module:
 ATOM                MyRegisterClass(HINSTANCE hInstance);
@@ -15,47 +41,234 @@ BOOL                InitInstance(HINSTANCE, int);
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
 
-int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
-                     _In_opt_ HINSTANCE hPrevInstance,
-                     _In_ LPWSTR    lpCmdLine,
-                     _In_ int       nCmdShow)
+int GenerateField()
 {
+    int TrueVar = 1;
+    int FalseVar = 0;
+
+    int NumIsFree[15]; //NumIsFree[i] показывает, определили ли мы уже позицию i-й костяшки
+    int Nums[15]; //Nums[i] содержит номер костяшки, находящейся в i-й позиции
+    for (int i = 0; i < 15; i++) //Объявляем, что изначально все костяшки свободны
+        NumIsFree[i] = TrueVar;
+    srand((unsigned)time(0)); //randomize позволяет при каждом прогоне программы получать разные последовательности псевдослучайных чисел
+    int Flag; //Флаг, определяющий корректность выбора костяшки для данной позиции
+    int RandNum; //Номер костяшки, генерируемый в дальнейшем случайным образом
+    for (int i = 0; i < 15; i++) //Нам надо определить номер костяшки, находящейся в каждой из 15 позиций поля
+    {
+        Flag = FalseVar; //Каждый раз сбрасываем значение флага
+        while (!Flag) //Продолжаем случайным образом определять номер костяшки, пока он не окажется корректным
+        {
+            RandNum = (rand() % 15) + 1; //random(n) генерирует псевдослучайное число от 0 до n - 1, а нам нужно от 1 до 15
+            if (NumIsFree[RandNum - 1]) //Если костяшка с таким номером еще свободна (помним, что массивы нумеруются начиная с нуля)
+                Flag = TrueVar; //то мы определили ее номер корректно
+        }
+        Nums[i] = RandNum; //Записываем этот корректный номер в i-ю позицию
+        NumIsFree[RandNum - 1] = FalseVar; //Костяшка с этим номером теперь занята
+    }
+
+    int Chaos = 0; //Количество беспорядков на поле
+    int CurrNum; //Костяшка, для которой мы рассматриваем беспорядки
+    for (int i = 0; i < 14; i++) //Считаем для костяшек на первых 14 позициях (для 15-й это бессмысленно)
+    {
+        CurrNum = Nums[i];
+        for (int j = i + 1; j < 15; j++)
+            if (CurrNum > Nums[j])
+                Chaos++;
+    }
+    if (Chaos % 2 == 1) //Если общее число беспорядков нечетное,
+    { //меняем местами костяшки на 14-й и 15-й позициях
+        int temp = Nums[13];
+        Nums[13] = Nums[14];
+        Nums[14] = temp;
+    }
+
+    for (int i = 0; i < 15; i++)
+    {   
+        TilesArray[i % 4][i / 4].TileNum = Nums[i]; //a % b - остаток от деления a на b
+       // _itoa_s(Nums[i], TilesArray[i % 4][i / 4].TileName, sizeof(TilesArray[i % 4][i / 4].TileName), i);
+    }
+
+    EmptyX = 3;
+    EmptyY = 3;
+
+    TilesArray[EmptyX][EmptyY].TileNum = 0;
+
+    return 0;
+}
+
+void CreateField()
+{
+    for (int i = 0; i < 4; i++)
+    {
+        for (int j = 0; j < 4; j++)
+        {
+            TilesArray[i][j].TileRect.left = SPACE * (i + 1) + WIDTH * i;
+            TilesArray[i][j].TileRect.top = SPACE * (j + 1) + WIDTH * j;
+            TilesArray[i][j].TileRect.right = SPACE * (i + 1) + WIDTH * (i + 1);
+            TilesArray[i][j].TileRect.bottom = SPACE * (j + 1) + WIDTH * (j + 1);
+        }
+    }
+}
+
+void Move(enum Direction dir)
+{
+    Tile TempTile;
+
+    switch (dir)
+    {
+        case LEFT:
+        {
+            if (EmptyX < 3)
+            {
+                TilesArray[EmptyX][EmptyY].TileNum = TilesArray[EmptyX + 1][EmptyY].TileNum;
+                TilesArray[EmptyX][EmptyY].TileRect = TilesArray[EmptyX + 1][EmptyY].TileRect;
+                TilesArray[EmptyX + 1][EmptyY].TileNum = 0;
+                EmptyX++;
+            }
+        } break;
+        case UP:
+        {
+            if (EmptyY < 3)
+            {
+                TilesArray[EmptyX][EmptyY].TileNum = TilesArray[EmptyX][EmptyY + 1].TileNum;
+                TilesArray[EmptyX][EmptyY + 1].TileNum = 0;
+                EmptyY++;
+            }
+        } break;
+
+        case RIGHT:
+        {
+            if (EmptyX > 0)
+            {
+                //TilesArray[EmptyX][EmptyY] = TilesArray[EmptyX - 1][EmptyY];
+                //TilesArray[EmptyX - 1][EmptyY].TileNum = 0;
+
+                TempTile = TilesArray[EmptyX - 1][EmptyY];
+                TilesArray[EmptyX-1][EmptyY] = EmptyTile;
+                TilesArray[EmptyX][EmptyY] = TempTile;
+
+                //TilesArray[EmptyX - 1][EmptyY].TileNum;
+                //TilesArray[EmptyX-1][EmptyY].TileRect.left += WIDTH;
+                //TilesArray[EmptyX-1][EmptyY].TileRect.right += WIDTH;
+
+                //TilesArray[EmptyX - 1][EmptyY].TileNum = 0;
+                EmptyX--;
+            }
+        }
+        break;
+
+        case DOWN:
+        {
+            if (EmptyY > 0)
+            {
+                TilesArray[EmptyX][EmptyY].TileNum = TilesArray[EmptyX][EmptyY - 1].TileNum;
+                TilesArray[EmptyX][EmptyY - 1].TileNum = 0;
+                EmptyY--;
+            }
+        } break;
+    }
+}
+
+BOOL FieldIsCorrect()
+{
+    for (int i = 0; i < 15; i++)
+        if (TilesArray[i % 4][i / 4].TileNum != i + 1)
+            return FALSE; //При первом же нахождении несоответствия выходим и возвращаем false
+    return TRUE;//Если не найдено ни одного несоответствия - поле собрано верно
+    //SendMessage
+}
+
+
+
+void DrawField(HWND hwnd, HDC hdc)
+{
+    HBRUSH hBrushColorBG = CreateSolidBrush(RGB(0, 0, 75));
+    HBRUSH hBrushColorRECT = CreateSolidBrush(RGB(60, 60, 200));
+    HBRUSH hBrushColorEL = CreateSolidBrush(RGB(220, 220, 220));
+    HFONT hFont, holdFont;
+    wchar_t bufer[10];
+
+    for (int i = 0; i < 4; i++)
+    {
+        for (int j = 0; j < 4; j++)
+        {
+            if (TilesArray[i][j].TileNum != 0)
+            {
+                SelectObject(hdc, hBrushColorBG);
+                RoundRect(hdc, TilesArray[i][j].TileRect.left, TilesArray[i][j].TileRect.top, TilesArray[i][j].TileRect.right, TilesArray[i][j].TileRect.bottom, 15, 20);
+                SelectObject(hdc, hBrushColorRECT);
+                RoundRect(hdc, TilesArray[i][j].TileRect.left + SPACE, TilesArray[i][j].TileRect.top + SPACE, TilesArray[i][j].TileRect.right - SPACE, TilesArray[i][j].TileRect.bottom - SPACE, 15, 20);
+                SelectObject(hdc, hBrushColorEL);
+                Ellipse(hdc,
+                    TilesArray[i][j].TileRect.left + 150,
+                    TilesArray[i][j].TileRect.top + 150,
+                    TilesArray[i][j].TileRect.right - 150,
+                    TilesArray[i][j].TileRect.bottom - 150
+                );
+                
+                SetBkColor(hdc, RGB(220, 220, 220));
+
+                hFont = CreateFontW(60, 0, 0, 0, FW_SEMIBOLD, 0, 0, 0, 0, 0, 0, 0, 0, L"CourierNew");
+                holdFont = SelectObject(hdc, hFont);
+
+                wsprintf(bufer, TEXT("%i"), TilesArray[i][j].TileNum);
+
+                TextOutW(hdc,
+                    TilesArray[i][j].TileRect.left + 75,
+                    TilesArray[i][j].TileRect.top + 70,
+                    bufer,
+                    lstrlen(bufer));
+             
+                SelectObject(hdc, holdFont);
+                DeleteObject(hFont);
+                InvalidateRect(hwnd, 0, 0);
+            }
+        }
+    }
+
+}
+
+int WINAPI wWinMain(
+    _In_ HINSTANCE hInstance,
+    _In_opt_ HINSTANCE hPrevInstance,
+    _In_ LPWSTR    lpCmdLine,
+    _In_ int       nCmdShow)
+{
+    MSG msg;
+
+    GenerateField();
+    CreateField();
+
     UNREFERENCED_PARAMETER(hPrevInstance);
     UNREFERENCED_PARAMETER(lpCmdLine);
 
-    // TODO: Place code here.
 
     // Initialize global strings
     LoadStringW(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
     LoadStringW(hInstance, IDC_PUZZLE15, szWindowClass, MAX_LOADSTRING);
+
     MyRegisterClass(hInstance);
 
-    int cxScreen, cyScreen;
-
-    cxScreen = GetSystemMetrics(SM_CXSCREEN);
-    cyScreen = GetSystemMetrics(SM_CYSCREEN);
-
     // Perform application initialization:
-    if (!InitInstance (hInstance, nCmdShow))
+    if (!InitInstance(hInstance, nCmdShow))
     {
         return FALSE;
     }
 
     HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_PUZZLE15));
 
-    MSG msg;
 
     // Main message loop:
     while (GetMessage(&msg, NULL, 0, 0))
     {
         if (!TranslateAccelerator(msg.hwnd, hAccelTable, &msg))
         {
-            TranslateMessage(&msg);
-            DispatchMessage(&msg);
+                TranslateMessage(&msg);
+                DispatchMessage(&msg);
         }
     }
 
-    return (int) msg.wParam;
+    return (int)msg.wParam;
 }
 
 
@@ -71,17 +284,17 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 
     wcex.cbSize = sizeof(WNDCLASSEX);
 
-    wcex.style          = CS_HREDRAW | CS_VREDRAW;
-    wcex.lpfnWndProc    = WndProc;
-    wcex.cbClsExtra     = 0;
-    wcex.cbWndExtra     = 0;
-    wcex.hInstance      = hInstance;
-    wcex.hIcon          = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_PUZZLE15));
-    wcex.hCursor        = LoadCursor(NULL, IDC_ARROW);
-    wcex.hbrBackground  = (HBRUSH)(COLOR_WINDOW+1);
-    wcex.lpszMenuName   = MAKEINTRESOURCEW(IDC_PUZZLE15);
-    wcex.lpszClassName  = szWindowClass;
-    wcex.hIconSm        = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
+    wcex.style = CS_HREDRAW | CS_VREDRAW;
+    wcex.lpfnWndProc = WndProc;
+    wcex.cbClsExtra = 0;
+    wcex.cbWndExtra = 0;
+    wcex.hInstance = hInstance;
+    wcex.hIcon = LoadIcon(hInstance, TEXT("D:\\sources\\C\\Puzzle15\\15.ico"));
+    wcex.hCursor = LoadCursor(NULL, IDC_ARROW);
+    wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
+    wcex.lpszMenuName = MAKEINTRESOURCEW(IDC_PUZZLE15);
+    wcex.lpszClassName = szWindowClass;
+    wcex.hIconSm = LoadIcon(wcex.hInstance, TEXT("D:\\sources\\C\\Puzzle15\\15.ico"));
 
     return RegisterClassExW(&wcex);
 }
@@ -98,20 +311,30 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 //
 BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 {
-   hInst = hInstance; // Store instance handle in our global variable
+    hInst = hInstance; // Store instance handle in our global variable
 
-   HWND hWnd = CreateWindow(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
-      CW_USEDEFAULT, 0, 870, 910, NULL, NULL, hInstance, NULL);
+    HWND hWnd = CreateWindow(
+        szWindowClass,                  // window class name
+        szTitle,                    // window caption
+        WS_OVERLAPPEDWINDOW,        // window style
+        200,              // initial x position
+        80,              // initial y position
+        1400,                          // initial x size
+        910,                          // initial y size
+        NULL,                        // parent window handle
+        NULL,                       // window menu handle
+        hInstance,                  // program instance handle
+        NULL);                     // creation parameters
 
-   if (!hWnd)
-   {
-      return FALSE;
-   }
+    if (!hWnd)
+    {
+        return FALSE;
+    }
 
-   ShowWindow(hWnd, nCmdShow);
-   UpdateWindow(hWnd);
+    ShowWindow(hWnd, nCmdShow);
+    UpdateWindow(hWnd);
 
-   return TRUE;
+    return TRUE;
 }
 
 //
@@ -126,207 +349,212 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 //
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-    static HWND      tile1, tile2, tile3, tile4, tile5, tile6, tile7, tile8, tile9, tile10, tile11, tile12, tile13, tile14, tile15, tile16;
+    HWND restart, moveCount, textMoves;
+    PAINTSTRUCT ps;
+    HDC hdc;
+
+    Tile TempTile;
+
+
+    HFONT hFont1, hFont2, holdFont;
+    wchar_t bufer1[30];
+    wchar_t bufer2[30];
+    wchar_t bufer3[30];
+    wchar_t bufer4[30];
+    wchar_t bufer5[30];
+    wchar_t bufer6[30];
+    wchar_t bufer7[30];
+
 
     switch (message)
     {
     case WM_CREATE:
 
-        tile1 = CreateWindow(
-            L"button", L"",
+        restart = CreateWindowW(
+            L"button", L"Restart game",
             WS_VISIBLE | WS_CHILD,
-            10, 10, 200, 200,
-            hWnd, (HMENU) 1001, NULL, NULL);
+            900, 640, 200, 100,
+            hWnd, (HMENU) 10001, NULL, NULL);
+        
+        CreateWindowW(L"Button", L"Moves made",
+            WS_CHILD | WS_VISIBLE | BS_GROUPBOX,
+            860, 10, 200, 200, hWnd, (HMENU)10002, NULL, NULL);
+        
+        //textMoves = CreateWindowW(WC_STATIC, L"0", WS_CHILD | WS_VISIBLE
+          //  | SS_CENTER, 15, 60, 300, 230, hWnd, (HMENU)10003, NULL, NULL);
 
-        tile2 = CreateWindow(
-            L"button", L"Tile 2",
-            WS_VISIBLE | WS_CHILD,
-            220, 10, 200, 200,
-            hWnd, (HMENU) 1002, NULL, NULL);
+        break;
 
-        tile3 = CreateWindow(
-            L"button", L"Tile 3",
-            WS_VISIBLE | WS_CHILD,
-            430, 10, 200, 200,
-            hWnd, (HMENU) 1003, NULL, NULL);
+    case WM_SIZE:
+        GetClientRect(hWnd, &ClientArea);
+        break;
 
-        tile4 = CreateWindow(
-            L"button", L"Tile 4",
-            WS_VISIBLE | WS_CHILD,
-            640, 10, 200, 200,
-            hWnd, (HMENU) 1004, NULL, NULL);
+    case WM_NOTIFY:
+       // const int asize = 4;
+        //wchar_t buf[4];
+        //size_t cbDest = asize * sizeof(wchar_t);
+        //StringCbPrintfW(buf, cbDest, L"%d", movesCount);
 
-        tile5 = CreateWindow(
-            L"button", L"Tile 5",
-            WS_VISIBLE | WS_CHILD,
-            10, 220, 200, 200,
-            hWnd, (HMENU)1005, NULL, NULL);
-
-        tile6 = CreateWindow(
-            L"button", L"Tile 6",
-            WS_VISIBLE | WS_CHILD,
-            220, 220, 200, 200,
-            hWnd, (HMENU)1006, NULL, NULL);
-
-        tile7 = CreateWindow(
-            L"button", L"Tile 7",
-            WS_VISIBLE | WS_CHILD,
-            430, 220, 200, 200,
-            hWnd, (HMENU)1007, NULL, NULL);
-
-        tile8 = CreateWindow(
-            L"button", L"Tile 8",
-            WS_VISIBLE | WS_CHILD,
-            640, 220, 200, 200,
-            hWnd, (HMENU)1008, NULL, NULL);
-
-        tile9 = CreateWindow(
-            L"button", L"Tile 9",
-            WS_VISIBLE | WS_CHILD,
-            10, 430, 200, 200,
-            hWnd, (HMENU)1009, NULL, NULL);
-
-        tile10 = CreateWindow(
-            L"button", L"Tile 10",
-            WS_VISIBLE | WS_CHILD,
-            220, 430, 200, 200,
-            hWnd, (HMENU)1010, NULL, NULL);
-
-        tile11 = CreateWindow(
-            L"button", L"Tile 11",
-            WS_VISIBLE | WS_CHILD,
-            430, 430, 200, 200,
-            hWnd, (HMENU)1011, NULL, NULL);
-
-        tile12 = CreateWindow(
-            L"button", L"Tile 12",
-            WS_VISIBLE | WS_CHILD,
-            640, 430, 200, 200,
-            hWnd, (HMENU)1012, NULL, NULL);
-
-        tile13 = CreateWindow(
-            L"button", L"Tile 13",
-            WS_VISIBLE | WS_CHILD,
-            10, 640, 200, 200,
-            hWnd, (HMENU)1013, NULL, NULL);
-
-        tile14 = CreateWindow(
-            L"button", L"Tile 14",
-            WS_VISIBLE | WS_CHILD,
-            220, 640, 200, 200,
-            hWnd, (HMENU)1014, NULL, NULL);
-
-        tile15 = CreateWindow(
-            L"button", L"Tile 15",
-            WS_VISIBLE | WS_CHILD,
-            430, 640, 200, 200,
-            hWnd, (HMENU)1015, NULL, NULL);
-
-        tile16 = CreateWindow(
-            L"button", L"Empty",
-            WS_CHILD,
-            640, 640, 200, 200,
-            hWnd, (HMENU)1000, NULL, NULL);
+        //SetWindowTextW(textMoves, buf);
 
     case WM_COMMAND:
+    {
+        int wmId = LOWORD(wParam);
+        // Parse the menu selections:
+        switch (wmId)
         {
-            int wmId = LOWORD(wParam);
-            // Parse the menu selections:
-            switch (wmId)
-            {
-            case IDM_ABOUT:
-                DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
-                break;
-            case IDM_EXIT:
-                DestroyWindow(hWnd);
-                break;
-            default:
-                return DefWindowProc(hWnd, message, wParam, lParam);
-            }
+        case IDM_ABOUT:
+            DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
+            break;
+        case IDM_EXIT:
+            DestroyWindow(hWnd);
+            break;
+        default:
+            return DefWindowProc(hWnd, message, wParam, lParam);
         }
-        break;
+    }
+    break;
 
     case WM_PAINT:
+    {
+        hdc = BeginPaint(hWnd, &ps);
+
+        // TODO: Add any drawing code that uses hdc here...
+        DrawField(hWnd, hdc);
+        //SetBkColor(hdc, RGB(220, 220, 220));
+
+        hFont1 = CreateFontW(28, 0, 0, 0, FW_SEMIBOLD, 0, 0, 0, 0, 0, 0, 0, 0, L"CourierNew");
+        hFont2 = CreateFontW(80, 0, 0, 0, FW_SEMIBOLD, 0, 0, 0, 0, 0, 0, 0, 0, L"CourierNew");
+
+        holdFont = SelectObject(hdc, hFont1);
+
+        wsprintf(bufer1, TEXT("LEFT: %i"), TilesArray[EmptyX][EmptyY].TileRect.left);
+        wsprintf(bufer2, TEXT("TOP: %i"), TilesArray[EmptyX][EmptyY].TileRect.top);
+        wsprintf(bufer3, TEXT("RIGHT: %i"), TilesArray[EmptyX][EmptyY].TileRect.right);
+        wsprintf(bufer4, TEXT("BOTTOM: %i"), TilesArray[EmptyX][EmptyY].TileRect.bottom);
+        wsprintf(bufer5, TEXT("EmptyX: %i"), EmptyX);
+        wsprintf(bufer6, TEXT("EmptyY: %i"), EmptyY);
+        DeleteObject(holdFont);
+        
+        holdFont = SelectObject(hdc, hFont2);
+
+        wsprintf(bufer7, TEXT("%i"), movesCount);
+
+
+        TextOutW(hdc, 900, 200, bufer1, lstrlen(bufer1));
+        TextOutW(hdc, 900, 250, bufer2, lstrlen(bufer2));
+        TextOutW(hdc, 1100, 200, bufer3, lstrlen(bufer3));
+        TextOutW(hdc, 1100, 250, bufer4, lstrlen(bufer4));
+        TextOutW(hdc, 900, 300, bufer5, lstrlen(bufer5));
+        TextOutW(hdc, 900, 350, bufer6, lstrlen(bufer6));
+        TextOutW(hdc, 900, 40, bufer7, lstrlen(bufer7));
+
+
+        EndPaint(hWnd, &ps);
+    }
+    break;
+
+    case WM_KEYDOWN:
+         
+        //c = getch();                          //Считываем нажатие клавиши
+        switch (wParam)                              //В зависимости от нажатой клавиши (от ее целочисленного кода) двигаем костяшки
         {
-            PAINTSTRUCT ps;
-            HDC hdc = BeginPaint(hWnd, &ps);
-            // TODO: Add any drawing code that uses hdc here...
-            EndPaint(hWnd, &ps);
-        }
-        break;
+            case VK_LEFT:                   //Нажата клавиша "Влево" 
+                if (EmptyX < 3)
+                {
+                    TempTile = TilesArray[EmptyX][EmptyY];
+                    TilesArray[EmptyX][EmptyY] = TilesArray[EmptyX+1][EmptyY];
+                    TilesArray[EmptyX+1][EmptyY] = TempTile;
+                    CreateField();
+                    EmptyX++;
+                    movesCount++;
+                }
 
-/*
-    case WM_DRAWITEM:
-        pdis = (LPDRAWITEMSTRUCT)lParam;
+                //Move(LEFT);
+                SendMessage(hWnd, WM_PAINT, wParam, lParam);
+                InvalidateRect(hWnd, 0, 0);
 
-        // Fill area with white and frame it black
+                break;
 
-        FillRect(pdis->hDC, &pdis->rcItem,
-            (HBRUSH)GetStockObject(WHITE_BRUSH));
+            case VK_UP:                     //Нажата клавиша "Вверх"
+                if (EmptyY < 3)
+                {
+                    TempTile = TilesArray[EmptyX][EmptyY];
+                    TilesArray[EmptyX][EmptyY] = TilesArray[EmptyX][EmptyY+1];
+                    TilesArray[EmptyX][EmptyY+1] = TempTile;
+                    CreateField();
+                    EmptyY++;
+                    movesCount++;
+                }
+                //Move(UP);
+                SendMessage(hWnd, WM_PAINT, wParam, lParam);
+                InvalidateRect(hWnd, 0, 0);
 
-        FrameRect(pdis->hDC, &pdis->rcItem,
-            (HBRUSH)GetStockObject(BLACK_BRUSH));
+                break;
+                 
+            case VK_RIGHT:                  //Нажата клавиша "Вправо"
+            {
+                if (EmptyX > 0)
+                {
+                    //TilesArray[EmptyX][EmptyY] = TilesArray[EmptyX - 1][EmptyY];
+                    //TilesArray[EmptyX - 1][EmptyY].TileNum = 0;
 
-        // Draw inward and outward black triangles
-        cx = pdis->rcItem.right - pdis->rcItem.left;
-        cy = pdis->rcItem.bottom - pdis->rcItem.top;
+                    TempTile = TilesArray[EmptyX - 1][EmptyY];
+                    TilesArray[EmptyX - 1][EmptyY] = TilesArray[EmptyX][EmptyY];
+                    TilesArray[EmptyX][EmptyY] = TempTile;
+                    CreateField();
+                    movesCount++;
 
-        switch (pdis->CtlID)
-        {
-        case 1001:
-            pt[0].x = 3 * cx / 8;  pt[0].y = 1 * cy / 8;
-            pt[1].x = 5 * cx / 8;  pt[1].y = 1 * cy / 8;
-            pt[2].x = 4 * cx / 8;  pt[2].y = 3 * cy / 8;
+                    //TilesArray[EmptyX - 1][EmptyY].TileNum;
+                    //TilesArray[EmptyX-1][EmptyY].TileRect.left += WIDTH;
+                    //TilesArray[EmptyX-1][EmptyY].TileRect.right += WIDTH;
 
-            Triangle(pdis->hDC, pt);
+                    //TilesArray[EmptyX - 1][EmptyY].TileNum = 0;
+                    EmptyX--;
 
-            pt[0].x = 7 * cx / 8;  pt[0].y = 3 * cy / 8;
-            pt[1].x = 7 * cx / 8;  pt[1].y = 5 * cy / 8;
-            pt[2].x = 5 * cx / 8;  pt[2].y = 4 * cy / 8;
+                    SendMessage(hWnd, WM_PAINT, wParam, lParam);
+                    InvalidateRect(hWnd, 0, 0);
+                }
 
-            Triangle(pdis->hDC, pt);
+            }
+                //Move(RIGHT, hWnd);
+                SendMessage(hWnd, WM_PAINT, wParam, lParam);
+                InvalidateRect(hWnd, 0, 0);
 
-            pt[0].x = 5 * cx / 8;  pt[0].y = 7 * cy / 8;
-            pt[1].x = 3 * cx / 8;  pt[1].y = 7 * cy / 8;
-            pt[2].x = 4 * cx / 8;  pt[2].y = 5 * cy / 8;
+                break;
 
-            Triangle(pdis->hDC, pt);
+            case VK_DOWN:                   //Нажата клавиша "Вниз"
+                if (EmptyY > 0)
+                {
 
-            pt[0].x = 1 * cx / 8;  pt[0].y = 5 * cy / 8;
-            pt[1].x = 1 * cx / 8;  pt[1].y = 3 * cy / 8;
-            pt[2].x = 3 * cx / 8;  pt[2].y = 4 * cy / 8;
+                    TempTile = TilesArray[EmptyX][EmptyY-1];
+                    TilesArray[EmptyX][EmptyY-1] = TilesArray[EmptyX][EmptyY];
+                    TilesArray[EmptyX][EmptyY] = TempTile;
+                    CreateField();
+                    EmptyY--;
+                    movesCount++;
+                }
+                //Move(DOWN);
+                SendMessage(hWnd, WM_PAINT, wParam, lParam);
+                InvalidateRect(hWnd, 0, 0);
 
-            Triangle(pdis->hDC, pt);
-            break;
-        }
+                break;
 
-        // Invert the rectangle if the button is selected
-
-        if (pdis->itemState & ODS_SELECTED)
-            InvertRect(pdis->hDC, &pdis->rcItem);
-
-        // Draw a focus rectangle if the button has the focus
-
-        if (pdis->itemState & ODS_FOCUS)
-        {
-            pdis->rcItem.left += cx / 16;
-            pdis->rcItem.top += cy / 16;
-            pdis->rcItem.right -= cx / 16;
-            pdis->rcItem.bottom -= cy / 16;
-
-            DrawFocusRect(pdis->hDC, &pdis->rcItem);
+            case VK_ESCAPE:                 //Нажата клавиша "Escape" 
+                SendMessage(hWnd, WM_DESTROY, 0, 0);
+                return 0; 
         }
         return 0;
-*/
+
     case WM_DESTROY:
         PostQuitMessage(0);
-        break;
+        return 0;
 
-    default:
-        return DefWindowProc(hWnd, message, wParam, lParam);
+    //default:
+    //    return DefWindowProc(hWnd, message, wParam, lParam);
     }
 
-    return 0;
+    return DefWindowProc(hWnd, message, wParam, lParam);;
 }
 
 // Message handler for about box.
