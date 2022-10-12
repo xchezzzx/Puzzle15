@@ -9,11 +9,17 @@
 #define MAX_LOADSTRING 100
 #define SIZE 16
 #define WIDTH 200
-#define SPACE 10
+#define SPACE 0
+#define ID_RESTART 10001
+#define ID_QUIT 10002
+#define ID_SOLVE 10003
+#define DARKTHEME RGB(100, 100, 100)
+#define SLEEPTIMER 200
 
 typedef struct
 {
     RECT TileRect;
+    HBITMAP Pic;
     int TileNum;
     //wchar_t* TileName;
 } Tile;
@@ -25,15 +31,18 @@ HINSTANCE hInst;                                // current instance
 WCHAR szTitle[MAX_LOADSTRING] = L"The Puzzle of 15";                  // The title bar text
 WCHAR szWindowClass[MAX_LOADSTRING] = TEXT("GameWnd");            // the main window class name
 
+
+
 RECT ClientArea;                    //size of client area in window
 Tile TilesArray[4][4];               //array of tiles for field
 
 //int FieldInt[4][4];                 //array of puzzle numbers
 Tile EmptyTile;
 int EmptyX, EmptyY;                     //coordinates of empty place
-int movesCount = 0;
+int MovesCount = 0;                     //MovesCount - counter of moves done by player
 
 enum Direction { LEFT, UP, RIGHT, DOWN };
+int Victory = 0;
 
 // Forward declarations of functions included in this code module:
 ATOM                MyRegisterClass(HINSTANCE hInstance);
@@ -45,6 +54,9 @@ int GenerateField()
 {
     int TrueVar = 1;
     int FalseVar = 0;
+    int counter = 0;
+    MovesCount = 0;
+    Victory = 0;
 
     int NumIsFree[15]; //NumIsFree[i] показывает, определили ли мы уже позицию i-й костяшки
     int Nums[15]; //Nums[i] содержит номер костяшки, находящейся в i-й позиции
@@ -82,30 +94,70 @@ int GenerateField()
         Nums[14] = temp;
     }
 
-    for (int i = 0; i < 15; i++)
+    for (int i = 0; i < 4; i++)
     {   
-        TilesArray[i % 4][i / 4].TileNum = Nums[i]; //a % b - остаток от деления a на b
-       // _itoa_s(Nums[i], TilesArray[i % 4][i / 4].TileName, sizeof(TilesArray[i % 4][i / 4].TileName), i);
+        for (int j = 0; j < 4; j++)
+        {
+            TilesArray[i][j].TileNum = Nums[counter]; //a % b - остаток от деления a на b
+            counter++;
+        }
     }
 
     EmptyX = 3;
     EmptyY = 3;
 
-    TilesArray[EmptyX][EmptyY].TileNum = 0;
+    TilesArray[EmptyX][EmptyY].TileNum = 16;
 
     return 0;
 }
 
+void SolvePuzzle()
+{
+    Tile buf;
+
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 4; j++) {
+            buf = TilesArray[i][j];
+            int l = j + 1;
+            for (int k = i; k < 4; k++) {
+                while (l < 4) {
+                    /* swapping the data */
+                    if (buf.TileNum > TilesArray[k][l].TileNum)
+                    {
+                        buf = TilesArray[k][l];
+                        TilesArray[k][l] = TilesArray[i][j];
+                        TilesArray[i][j] = buf;
+                        MovesCount++;
+                    }
+                    l++;
+                }
+                l = 0;
+            }
+        }
+    }
+
+    EmptyX = 3;
+    EmptyY = 3;
+}
+
 void CreateField()
 {
+    wchar_t bufer[50];
+
     for (int i = 0; i < 4; i++)
     {
         for (int j = 0; j < 4; j++)
         {
-            TilesArray[i][j].TileRect.left = SPACE * (i + 1) + WIDTH * i;
-            TilesArray[i][j].TileRect.top = SPACE * (j + 1) + WIDTH * j;
-            TilesArray[i][j].TileRect.right = SPACE * (i + 1) + WIDTH * (i + 1);
-            TilesArray[i][j].TileRect.bottom = SPACE * (j + 1) + WIDTH * (j + 1);
+            if (TilesArray[i][j].TileNum != 16)
+            {
+                TilesArray[i][j].TileRect.left = SPACE * (j + 1) + WIDTH * j;
+                TilesArray[i][j].TileRect.top = SPACE * (i + 1) + WIDTH * i;
+                TilesArray[i][j].TileRect.right = SPACE * (j + 1) + WIDTH * (j + 1);
+                TilesArray[i][j].TileRect.bottom = SPACE * (i + 1) + WIDTH * (i + 1);
+
+                wsprintf(bufer, TEXT("d:\\sources\\C\\Puzzle15\\sources\\tile%i.bmp"), TilesArray[i][j].TileNum);
+                TilesArray[i][j].Pic = LoadImageW(hInst, bufer, IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+            }
         }
     }
 }
@@ -116,116 +168,165 @@ void Move(enum Direction dir)
 
     switch (dir)
     {
-        case LEFT:
+    case LEFT:                  //Left Arrow pressed 
+        if (EmptyY < 3)
         {
-            if (EmptyX < 3)
-            {
-                TilesArray[EmptyX][EmptyY].TileNum = TilesArray[EmptyX + 1][EmptyY].TileNum;
-                TilesArray[EmptyX][EmptyY].TileRect = TilesArray[EmptyX + 1][EmptyY].TileRect;
-                TilesArray[EmptyX + 1][EmptyY].TileNum = 0;
-                EmptyX++;
-            }
-        } break;
-        case UP:
-        {
-            if (EmptyY < 3)
-            {
-                TilesArray[EmptyX][EmptyY].TileNum = TilesArray[EmptyX][EmptyY + 1].TileNum;
-                TilesArray[EmptyX][EmptyY + 1].TileNum = 0;
-                EmptyY++;
-            }
-        } break;
-
-        case RIGHT:
-        {
-            if (EmptyX > 0)
-            {
-                //TilesArray[EmptyX][EmptyY] = TilesArray[EmptyX - 1][EmptyY];
-                //TilesArray[EmptyX - 1][EmptyY].TileNum = 0;
-
-                TempTile = TilesArray[EmptyX - 1][EmptyY];
-                TilesArray[EmptyX-1][EmptyY] = EmptyTile;
-                TilesArray[EmptyX][EmptyY] = TempTile;
-
-                //TilesArray[EmptyX - 1][EmptyY].TileNum;
-                //TilesArray[EmptyX-1][EmptyY].TileRect.left += WIDTH;
-                //TilesArray[EmptyX-1][EmptyY].TileRect.right += WIDTH;
-
-                //TilesArray[EmptyX - 1][EmptyY].TileNum = 0;
-                EmptyX--;
-            }
+            TempTile = TilesArray[EmptyX][EmptyY];
+            TilesArray[EmptyX][EmptyY] = TilesArray[EmptyX][EmptyY + 1];
+            TilesArray[EmptyX][EmptyY + 1] = TempTile;
+            PlaySound(MAKEINTRESOURCE(IDR_WAVE1), NULL, SND_RESOURCE | SND_ASYNC);
+            EmptyY++;
+            MovesCount++;
         }
         break;
 
-        case DOWN:
+    case UP:                     //Up Arrow pressed
+        if (EmptyX < 3)
         {
-            if (EmptyY > 0)
-            {
-                TilesArray[EmptyX][EmptyY].TileNum = TilesArray[EmptyX][EmptyY - 1].TileNum;
-                TilesArray[EmptyX][EmptyY - 1].TileNum = 0;
-                EmptyY--;
-            }
-        } break;
+            TempTile = TilesArray[EmptyX][EmptyY];
+            TilesArray[EmptyX][EmptyY] = TilesArray[EmptyX + 1][EmptyY];
+            TilesArray[EmptyX + 1][EmptyY] = TempTile;
+            PlaySound(MAKEINTRESOURCE(IDR_WAVE1), NULL, SND_RESOURCE | SND_ASYNC);
+            EmptyX++;
+            MovesCount++;
+        }
+        break;
+
+    case RIGHT:                  //Right Arrow pressed
+        if (EmptyY > 0)
+        {
+            TempTile = TilesArray[EmptyX][EmptyY - 1];
+            TilesArray[EmptyX][EmptyY - 1] = TilesArray[EmptyX][EmptyY];
+            TilesArray[EmptyX][EmptyY] = TempTile;
+            PlaySound(MAKEINTRESOURCE(IDR_WAVE1), NULL, SND_RESOURCE | SND_ASYNC);
+
+            EmptyY--;
+            MovesCount++;
+        }
+        break;
+
+    case DOWN:                   //Down Arrow pressed
+        if (EmptyX > 0)
+        {
+            TempTile = TilesArray[EmptyX - 1][EmptyY];
+            TilesArray[EmptyX - 1][EmptyY] = TilesArray[EmptyX][EmptyY];
+            TilesArray[EmptyX][EmptyY] = TempTile;
+            PlaySound(MAKEINTRESOURCE(IDR_WAVE1), NULL, SND_RESOURCE | SND_ASYNC);
+            EmptyX--;
+            MovesCount++;
+        }
+    break;
     }
 }
 
 BOOL FieldIsCorrect()
 {
-    for (int i = 0; i < 15; i++)
-        if (TilesArray[i % 4][i / 4].TileNum != i + 1)
-            return FALSE; //При первом же нахождении несоответствия выходим и возвращаем false
-    return TRUE;//Если не найдено ни одного несоответствия - поле собрано верно
-    //SendMessage
+    int counter = 1;
+    
+    for (int i = 0; i < 4; i++)
+    {
+        for (int j = 0; j < 4; j++)
+        {
+            if (TilesArray[i][j].TileNum != counter)
+                return FALSE;//a % b - остаток от деления a на b
+            counter++;
+        }
+    }
+    Victory = 42;
+
+    return TRUE;
 }
 
-
-
-void DrawField(HWND hwnd, HDC hdc)
+void DrawField(HDC hdc)
 {
-    HBRUSH hBrushColorBG = CreateSolidBrush(RGB(0, 0, 75));
-    HBRUSH hBrushColorRECT = CreateSolidBrush(RGB(60, 60, 200));
-    HBRUSH hBrushColorEL = CreateSolidBrush(RGB(220, 220, 220));
-    HFONT hFont, holdFont;
+    BITMAP bitmap;
+    HGDIOBJ oldBitmap;
+
+    HFONT hFont1, hFont2, holdFont;
+    wchar_t bufer1[30];
+    wchar_t bufer2[30];
+    wchar_t bufer3[30];
+    wchar_t bufer4[30];
+    wchar_t bufer5[30];
+    wchar_t bufer6[30];
+    wchar_t bufer7[30];
+    wchar_t bufer8[30];
+
+    wchar_t buferX[30];
+    wchar_t buferY[30];
+
+    HDC hdcMem = CreateCompatibleDC(hdc);
+    HBITMAP memBM = CreateCompatibleBitmap(hdc, ClientArea.right - ClientArea.left, ClientArea.bottom - ClientArea.top);
+
+    SelectObject(hdcMem, memBM);
+
     wchar_t bufer[10];
+
+    SelectObject(hdc, GetStockObject(DC_BRUSH));
+    SetDCBrushColor(hdc, DARKTHEME);
+    Rectangle(hdc, 0, 0, 800, 800);
 
     for (int i = 0; i < 4; i++)
     {
         for (int j = 0; j < 4; j++)
         {
-            if (TilesArray[i][j].TileNum != 0)
+            if (TilesArray[i][j].TileNum != 16)
             {
-                SelectObject(hdc, hBrushColorBG);
-                RoundRect(hdc, TilesArray[i][j].TileRect.left, TilesArray[i][j].TileRect.top, TilesArray[i][j].TileRect.right, TilesArray[i][j].TileRect.bottom, 15, 20);
-                SelectObject(hdc, hBrushColorRECT);
-                RoundRect(hdc, TilesArray[i][j].TileRect.left + SPACE, TilesArray[i][j].TileRect.top + SPACE, TilesArray[i][j].TileRect.right - SPACE, TilesArray[i][j].TileRect.bottom - SPACE, 15, 20);
-                SelectObject(hdc, hBrushColorEL);
-                Ellipse(hdc,
-                    TilesArray[i][j].TileRect.left + 150,
-                    TilesArray[i][j].TileRect.top + 150,
-                    TilesArray[i][j].TileRect.right - 150,
-                    TilesArray[i][j].TileRect.bottom - 150
-                );
-                
-                SetBkColor(hdc, RGB(220, 220, 220));
+                oldBitmap = SelectObject(hdcMem, TilesArray[i][j].Pic);
 
-                hFont = CreateFontW(60, 0, 0, 0, FW_SEMIBOLD, 0, 0, 0, 0, 0, 0, 0, 0, L"CourierNew");
-                holdFont = SelectObject(hdc, hFont);
+                GetObject(TilesArray[i][j].Pic, sizeof(bitmap), &bitmap);
+                BitBlt(hdc, TilesArray[i][j].TileRect.left, TilesArray[i][j].TileRect.top, bitmap.bmWidth, bitmap.bmHeight,
+                    hdcMem, 0, 0, SRCCOPY);
 
-                wsprintf(bufer, TEXT("%i"), TilesArray[i][j].TileNum);
+                //wsprintf(bufer, TEXT("%i"), TilesArray[i][j].TileNum);
 
-                TextOutW(hdc,
-                    TilesArray[i][j].TileRect.left + 75,
-                    TilesArray[i][j].TileRect.top + 70,
-                    bufer,
-                    lstrlen(bufer));
-             
-                SelectObject(hdc, holdFont);
-                DeleteObject(hFont);
-                InvalidateRect(hwnd, 0, 0);
+                //TextOutW(hdc,
+                //    TilesArray[i][j].TileRect.left + 75,
+                //    TilesArray[i][j].TileRect.top + 70,
+                //    bufer,
+                //    lstrlen(bufer));
             }
         }
     }
 
+    //SetBkColor(hdc, DARKTHEME);
+
+    hFont1 = CreateFontW(28, 0, 0, 0, FW_SEMIBOLD, 0, 0, 0, 0, 0, 0, 0, 0, L"CourierNew");
+    hFont2 = CreateFontW(42, 0, 0, 0, FW_SEMIBOLD, 0, 0, 0, 0, 0, 0, 0, 0, L"CourierNew");
+
+    holdFont = SelectObject(hdc, hFont1);
+
+    wsprintf(bufer1, TEXT("LEFT: %i"), TilesArray[EmptyX][EmptyY].TileRect.left);
+    wsprintf(bufer2, TEXT("TOP: %i"), TilesArray[EmptyX][EmptyY].TileRect.top);
+    wsprintf(bufer3, TEXT("RIGHT: %i"), TilesArray[EmptyX][EmptyY].TileRect.right);
+    wsprintf(bufer4, TEXT("BOTTOM: %i"), TilesArray[EmptyX][EmptyY].TileRect.bottom);
+    wsprintf(bufer5, TEXT("EmptyX: %i"), EmptyX);
+    wsprintf(bufer6, TEXT("EmptyY: %i"), EmptyY);
+    wsprintf(bufer8, TEXT("Status: %i"), Victory);
+
+    DeleteObject(holdFont);
+
+    holdFont = SelectObject(hdc, hFont2);
+
+    wsprintf(bufer7, TEXT("%i"), MovesCount);
+
+
+    TextOutW(hdc, 900, 200, bufer1, lstrlen(bufer1));
+    TextOutW(hdc, 900, 250, bufer2, lstrlen(bufer2));
+    TextOutW(hdc, 1100, 200, bufer3, lstrlen(bufer3));
+    TextOutW(hdc, 1100, 250, bufer4, lstrlen(bufer4));
+    TextOutW(hdc, 900, 300, bufer5, lstrlen(bufer5));
+    TextOutW(hdc, 900, 350, bufer6, lstrlen(bufer6));
+    //TextOutW(hdc, 0, 800, bufer7, lstrlen(bufer7));
+    TextOutW(hdc, 900, 400, bufer8, lstrlen(bufer8));
+
+    TextOutW(hdc, 1100, 300, buferX, lstrlen(buferX));
+    TextOutW(hdc, 1100, 350, buferY, lstrlen(buferY));
+
+
+    //BitBlt(hdc, 0, 0, ClientArea.right - ClientArea.left, ClientArea.bottom - ClientArea.top, hdcMem, 0, 0, SRCCOPY);
+    DeleteDC(hdcMem);
+    DeleteObject(memBM);
 }
 
 int WINAPI wWinMain(
@@ -236,12 +337,8 @@ int WINAPI wWinMain(
 {
     MSG msg;
 
-    GenerateField();
-    CreateField();
-
     UNREFERENCED_PARAMETER(hPrevInstance);
     UNREFERENCED_PARAMETER(lpCmdLine);
-
 
     // Initialize global strings
     LoadStringW(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
@@ -257,21 +354,38 @@ int WINAPI wWinMain(
 
     HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_PUZZLE15));
 
-
     // Main message loop:
+    //while (1)
+    //{
+    //    if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
+    //    {
+    //        if (msg.message == WM_QUIT) break;
+    //        TranslateMessage(&msg);
+    //        DispatchMessage(&msg);
+    //    }
+    //    else
+    //    {
+
+    //    }
+    //}
+
+    //while (GetMessage(&msg, NULL, 0, 0))
+    //{
+    //    if (!TranslateAccelerator(msg.hwnd, hAccelTable, &msg))
+    //    {
+    //        TranslateMessage(&msg);
+    //        DispatchMessage(&msg);
+    //    }
+    //}
+
     while (GetMessage(&msg, NULL, 0, 0))
     {
-        if (!TranslateAccelerator(msg.hwnd, hAccelTable, &msg))
-        {
-                TranslateMessage(&msg);
-                DispatchMessage(&msg);
-        }
+        TranslateMessage(&msg);
+        DispatchMessage(&msg);
     }
 
     return (int)msg.wParam;
 }
-
-
 
 //
 //  FUNCTION: MyRegisterClass()
@@ -289,12 +403,12 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
     wcex.cbClsExtra = 0;
     wcex.cbWndExtra = 0;
     wcex.hInstance = hInstance;
-    wcex.hIcon = LoadIcon(hInstance, TEXT("D:\\sources\\C\\Puzzle15\\15.ico"));
-    wcex.hCursor = LoadCursor(NULL, IDC_ARROW);
-    wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
+    wcex.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_ICON1));
+    wcex.hCursor = LoadCursor(NULL, IDC_HAND);
+    wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW);
     wcex.lpszMenuName = MAKEINTRESOURCEW(IDC_PUZZLE15);
     wcex.lpszClassName = szWindowClass;
-    wcex.hIconSm = LoadIcon(wcex.hInstance, TEXT("D:\\sources\\C\\Puzzle15\\15.ico"));
+    wcex.hIconSm = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_ICON1));
 
     return RegisterClassExW(&wcex);
 }
@@ -315,12 +429,12 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 
     HWND hWnd = CreateWindow(
         szWindowClass,                  // window class name
-        szTitle,                    // window caption
+        L"The Puzzle of 15",                    // window caption
         WS_OVERLAPPEDWINDOW,        // window style
         200,              // initial x position
-        80,              // initial y position
-        1400,                          // initial x size
-        910,                          // initial y size
+        20,              // initial y position
+        815,                          // initial x size
+        958,                          // initial y size
         NULL,                        // parent window handle
         NULL,                       // window menu handle
         hInstance,                  // program instance handle
@@ -353,208 +467,255 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     PAINTSTRUCT ps;
     HDC hdc;
 
-    Tile TempTile;
+    int xMouse;
+    int yMouse;
 
-
-    HFONT hFont1, hFont2, holdFont;
-    wchar_t bufer1[30];
-    wchar_t bufer2[30];
-    wchar_t bufer3[30];
-    wchar_t bufer4[30];
-    wchar_t bufer5[30];
-    wchar_t bufer6[30];
     wchar_t bufer7[30];
-
 
     switch (message)
     {
-    case WM_CREATE:
+        case WM_CREATE:
 
-        restart = CreateWindowW(
-            L"button", L"Restart game",
-            WS_VISIBLE | WS_CHILD,
-            900, 640, 200, 100,
-            hWnd, (HMENU) 10001, NULL, NULL);
-        
-        CreateWindowW(L"Button", L"Moves made",
-            WS_CHILD | WS_VISIBLE | BS_GROUPBOX,
-            860, 10, 200, 200, hWnd, (HMENU)10002, NULL, NULL);
-        
-        //textMoves = CreateWindowW(WC_STATIC, L"0", WS_CHILD | WS_VISIBLE
-          //  | SS_CENTER, 15, 60, 300, 230, hWnd, (HMENU)10003, NULL, NULL);
+            GenerateField();
+            CreateField();
 
-        break;
+            CreateWindowW(
+                L"button", L"Solve",
+                WS_VISIBLE | WS_CHILD,
+                200, 800, WIDTH, WIDTH / 2,
+                hWnd, (HMENU)ID_SOLVE, NULL, NULL);
 
-    case WM_SIZE:
-        GetClientRect(hWnd, &ClientArea);
-        break;
+            CreateWindowW(
+                L"button", L"Restart game",
+                WS_VISIBLE | WS_CHILD,
+                400, 800, WIDTH, WIDTH / 2,
+                hWnd, (HMENU) ID_RESTART, NULL, NULL);
 
-    case WM_NOTIFY:
-       // const int asize = 4;
-        //wchar_t buf[4];
-        //size_t cbDest = asize * sizeof(wchar_t);
-        //StringCbPrintfW(buf, cbDest, L"%d", movesCount);
+            CreateWindowW(
+                L"button", L"Quit",
+                WS_VISIBLE | WS_CHILD,
+                600, 800, WIDTH, WIDTH / 2,
+                hWnd, (HMENU) ID_QUIT, NULL, NULL);
 
-        //SetWindowTextW(textMoves, buf);
+            return 0;
 
-    case WM_COMMAND:
-    {
-        int wmId = LOWORD(wParam);
-        // Parse the menu selections:
-        switch (wmId)
-        {
-        case IDM_ABOUT:
-            DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
+        case WM_SIZE:
+            GetClientRect(hWnd, &ClientArea);
             break;
-        case IDM_EXIT:
-            DestroyWindow(hWnd);
-            break;
-        default:
-            return DefWindowProc(hWnd, message, wParam, lParam);
-        }
-    }
-    break;
 
-    case WM_PAINT:
-    {
-        hdc = BeginPaint(hWnd, &ps);
-
-        // TODO: Add any drawing code that uses hdc here...
-        DrawField(hWnd, hdc);
-        //SetBkColor(hdc, RGB(220, 220, 220));
-
-        hFont1 = CreateFontW(28, 0, 0, 0, FW_SEMIBOLD, 0, 0, 0, 0, 0, 0, 0, 0, L"CourierNew");
-        hFont2 = CreateFontW(80, 0, 0, 0, FW_SEMIBOLD, 0, 0, 0, 0, 0, 0, 0, 0, L"CourierNew");
-
-        holdFont = SelectObject(hdc, hFont1);
-
-        wsprintf(bufer1, TEXT("LEFT: %i"), TilesArray[EmptyX][EmptyY].TileRect.left);
-        wsprintf(bufer2, TEXT("TOP: %i"), TilesArray[EmptyX][EmptyY].TileRect.top);
-        wsprintf(bufer3, TEXT("RIGHT: %i"), TilesArray[EmptyX][EmptyY].TileRect.right);
-        wsprintf(bufer4, TEXT("BOTTOM: %i"), TilesArray[EmptyX][EmptyY].TileRect.bottom);
-        wsprintf(bufer5, TEXT("EmptyX: %i"), EmptyX);
-        wsprintf(bufer6, TEXT("EmptyY: %i"), EmptyY);
-        DeleteObject(holdFont);
-        
-        holdFont = SelectObject(hdc, hFont2);
-
-        wsprintf(bufer7, TEXT("%i"), movesCount);
+        //case WM_MOUSEMOVE:
+            //xMouse = LOWORD(lParam);
+            //yMouse = HIWORD(lParam);
 
 
-        TextOutW(hdc, 900, 200, bufer1, lstrlen(bufer1));
-        TextOutW(hdc, 900, 250, bufer2, lstrlen(bufer2));
-        TextOutW(hdc, 1100, 200, bufer3, lstrlen(bufer3));
-        TextOutW(hdc, 1100, 250, bufer4, lstrlen(bufer4));
-        TextOutW(hdc, 900, 300, bufer5, lstrlen(bufer5));
-        TextOutW(hdc, 900, 350, bufer6, lstrlen(bufer6));
-        TextOutW(hdc, 900, 40, bufer7, lstrlen(bufer7));
-
-
-        EndPaint(hWnd, &ps);
-    }
-    break;
-
-    case WM_KEYDOWN:
-         
-        //c = getch();                          //Считываем нажатие клавиши
-        switch (wParam)                              //В зависимости от нажатой клавиши (от ее целочисленного кода) двигаем костяшки
+        case WM_LBUTTONDOWN:
         {
-            case VK_LEFT:                   //Нажата клавиша "Влево" 
-                if (EmptyX < 3)
-                {
-                    TempTile = TilesArray[EmptyX][EmptyY];
-                    TilesArray[EmptyX][EmptyY] = TilesArray[EmptyX+1][EmptyY];
-                    TilesArray[EmptyX+1][EmptyY] = TempTile;
-                    CreateField();
-                    EmptyX++;
-                    movesCount++;
-                }
+            xMouse = LOWORD(lParam);
+            yMouse = HIWORD(lParam);
 
-                //Move(LEFT);
-                SendMessage(hWnd, WM_PAINT, wParam, lParam);
-                InvalidateRect(hWnd, 0, 0);
+            //if ((400 <= xMouse) && (xMouse <= 600) && (600 <= yMouse) && (yMouse <= 800))
 
-                break;
 
-            case VK_UP:                     //Нажата клавиша "Вверх"
-                if (EmptyY < 3)
-                {
-                    TempTile = TilesArray[EmptyX][EmptyY];
-                    TilesArray[EmptyX][EmptyY] = TilesArray[EmptyX][EmptyY+1];
-                    TilesArray[EmptyX][EmptyY+1] = TempTile;
-                    CreateField();
-                    EmptyY++;
-                    movesCount++;
-                }
-                //Move(UP);
-                SendMessage(hWnd, WM_PAINT, wParam, lParam);
-                InvalidateRect(hWnd, 0, 0);
-
-                break;
-                 
-            case VK_RIGHT:                  //Нажата клавиша "Вправо"
+            if ((TilesArray[EmptyX][EmptyY + 1].TileRect.left <= xMouse) && (xMouse <= TilesArray[EmptyX][EmptyY + 1].TileRect.right) &&
+                (TilesArray[EmptyX][EmptyY + 1].TileRect.top <= yMouse) && (yMouse <= TilesArray[EmptyX][EmptyY + 1].TileRect.bottom) && EmptyY < 3)
             {
-                if (EmptyX > 0)
-                {
-                    //TilesArray[EmptyX][EmptyY] = TilesArray[EmptyX - 1][EmptyY];
-                    //TilesArray[EmptyX - 1][EmptyY].TileNum = 0;
+                SendMessage(hWnd, WM_KEYDOWN, VK_LEFT, 0);
+            }
 
-                    TempTile = TilesArray[EmptyX - 1][EmptyY];
-                    TilesArray[EmptyX - 1][EmptyY] = TilesArray[EmptyX][EmptyY];
-                    TilesArray[EmptyX][EmptyY] = TempTile;
+            if ((TilesArray[EmptyX + 1][EmptyY].TileRect.left <= xMouse) && (xMouse <= TilesArray[EmptyX + 1][EmptyY].TileRect.right) &&
+                (TilesArray[EmptyX + 1][EmptyY].TileRect.top <= yMouse) && (yMouse <= TilesArray[EmptyX + 1][EmptyY].TileRect.bottom) && EmptyX < 3)
+            {
+                SendMessage(hWnd, WM_KEYDOWN, VK_UP, 0);
+            }
+
+            if ((TilesArray[EmptyX][EmptyY - 1].TileRect.left <= xMouse) && (xMouse <= TilesArray[EmptyX][EmptyY - 1].TileRect.right) &&
+                (TilesArray[EmptyX][EmptyY - 1].TileRect.top <= yMouse) && (yMouse <= TilesArray[EmptyX][EmptyY - 1].TileRect.bottom) && EmptyY > 0)
+            {
+                SendMessage(hWnd, WM_KEYDOWN, VK_RIGHT, 0);
+            }
+
+            if ((TilesArray[EmptyX - 1][EmptyY].TileRect.left <= xMouse) && (xMouse <= TilesArray[EmptyX - 1][EmptyY].TileRect.right) &&
+                (TilesArray[EmptyX - 1][EmptyY].TileRect.top <= yMouse) && (yMouse <= TilesArray[EmptyX - 1][EmptyY].TileRect.bottom) && EmptyX > 0)
+            {
+                SendMessage(hWnd, WM_KEYDOWN, VK_DOWN, 0);
+            }
+
+        }
+        break;
+
+        //case WM_NOTIFY:
+           // const int asize = 4;
+            //wchar_t buf[4];
+            //size_t cbDest = asize * sizeof(wchar_t);
+            //StringCbPrintfW(buf, cbDest, L"%d", movesCount);
+
+            //SetWindowTextW(textMoves, buf);
+
+        case WM_COMMAND:
+        {
+            int wmId = LOWORD(wParam);
+            // Parse the menu selections:
+            switch (wmId)
+            {
+            case ID_RESTART:
+                MovesCount = 0;
+                //GenerateField();
+                //CreateField();
+
+
+                SendMessage(hWnd, WM_CREATE, 0, 0);
+                SendMessage(hWnd, WM_PAINT, 0, 0);
+
+                InvalidateRect(hWnd, 0, 0);
+
+                SetFocus(hWnd);
+
+                break;
+
+            case ID_SOLVE:
+                SolvePuzzle();
+                CreateField();
+                //SendMessage(hWnd, WM_CREATE, 0, 0);
+                SendMessage(hWnd, WM_PAINT, 0, 0);
+
+                InvalidateRect(hWnd, 0, 0);
+                SetFocus(hWnd);
+
+                break;
+
+
+            case ID_QUIT:
+                SendMessage(hWnd, WM_DESTROY, 0, 0);
+                return 0;
+
+            case IDM_ABOUT:
+                DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
+                break;
+
+            case IDM_EXIT:
+                DestroyWindow(hWnd);
+                break;
+
+            //default:
+            //    return DefWindowProc(hWnd, message, wParam, lParam);
+            }
+        }
+        break;
+
+        case WM_PAINT:
+        {
+            InvalidateRect(hWnd, &ClientArea, 0);
+
+            hdc = BeginPaint(hWnd, &ps);
+
+            // TODO: Add any drawing code that uses hdc here...
+
+            DrawField(hdc);
+
+            wsprintf(bufer7, TEXT("Moves made:\n %i"), MovesCount);
+
+            CreateWindowW(WC_STATIC, bufer7, WS_CHILD | WS_VISIBLE
+                | SS_CENTER | SS_CENTERIMAGE, 0, 800, WIDTH, WIDTH / 2, hWnd, (HMENU)10003, NULL, NULL);
+
+            InvalidateRect(hWnd, 0, 0);
+
+            EndPaint(hWnd, &ps);
+        }
+        break;
+
+        case WM_KEYDOWN:
+
+            switch (wParam)                              //В зависимости от нажатой клавиши (от ее целочисленного кода) двигаем костяшки
+            {
+                case VK_LEFT:
+                    Move(LEFT);
                     CreateField();
-                    movesCount++;
-
-                    //TilesArray[EmptyX - 1][EmptyY].TileNum;
-                    //TilesArray[EmptyX-1][EmptyY].TileRect.left += WIDTH;
-                    //TilesArray[EmptyX-1][EmptyY].TileRect.right += WIDTH;
-
-                    //TilesArray[EmptyX - 1][EmptyY].TileNum = 0;
-                    EmptyX--;
+                    //FieldIsCorrect();
 
                     SendMessage(hWnd, WM_PAINT, wParam, lParam);
                     InvalidateRect(hWnd, 0, 0);
-                }
+                    Sleep(SLEEPTIMER);
+                break;
+
+                case VK_UP:                     //Нажата клавиша "Вверх"
+                    Move(UP);
+                    CreateField();
+                    SendMessage(hWnd, WM_PAINT, wParam, lParam);
+                    InvalidateRect(hWnd, 0, 0);
+                    Sleep(SLEEPTIMER);
+
+                break;
+                 
+                case VK_RIGHT:                  //Нажата клавиша "Вправо"
+                    Move(RIGHT);
+                    CreateField();
+                    SendMessage(hWnd, WM_PAINT, wParam, lParam);
+                    InvalidateRect(hWnd, 0, 0);
+                    Sleep(SLEEPTIMER);
+
+                break;
+
+                case VK_DOWN:                   //Нажата клавиша "Вниз"
+                    Move(DOWN);
+                    CreateField();
+                    SendMessage(hWnd, WM_PAINT, wParam, lParam);
+                    InvalidateRect(hWnd, 0, 0);
+                    Sleep(SLEEPTIMER);
+
+                break;
+
+                case VK_SPACE:
+                    SolvePuzzle();
+                    CreateField();
+                    SendMessage(hWnd, WM_PAINT, 0, 0);
+                    InvalidateRect(hWnd, 0, 0);
+                    break;
+
+                case VK_ESCAPE:                 //Нажата клавиша "Escape" 
+                    SendMessage(hWnd, WM_CREATE, 0, 0);
+                    SendMessage(hWnd, WM_PAINT, 0, 0);
+                    InvalidateRect(hWnd, 0, 0);
+                break; 
+            }
+
+            if (FieldIsCorrect())
+            {
+                int msgboxID = MessageBox(
+                    hWnd,
+                    (LPCWSTR)L"Wow! Congratulations!\nWanna once more?",
+                    (LPCWSTR)L"Puzzle 15",
+                    MB_ICONWARNING | MB_YESNO | MB_DEFBUTTON1);
+
+                switch (msgboxID)
+                {
+                    case IDYES:
+                    {
+                        SendMessage(hWnd, WM_CREATE, 0, 0);
+                        SendMessage(hWnd, WM_PAINT, 0, 0);
+                        InvalidateRect(hWnd, 0, 0);
+                    }
+                        break;
+
+                    case IDNO:
+                        SendMessage(hWnd, WM_DESTROY, 0, 0);
+                        break;
+                    }
+
+                return msgboxID;
 
             }
-                //Move(RIGHT, hWnd);
-                SendMessage(hWnd, WM_PAINT, wParam, lParam);
-                InvalidateRect(hWnd, 0, 0);
 
-                break;
+            break;
 
-            case VK_DOWN:                   //Нажата клавиша "Вниз"
-                if (EmptyY > 0)
-                {
+        case WM_DESTROY:
+            PostQuitMessage(0);
+        break;
 
-                    TempTile = TilesArray[EmptyX][EmptyY-1];
-                    TilesArray[EmptyX][EmptyY-1] = TilesArray[EmptyX][EmptyY];
-                    TilesArray[EmptyX][EmptyY] = TempTile;
-                    CreateField();
-                    EmptyY--;
-                    movesCount++;
-                }
-                //Move(DOWN);
-                SendMessage(hWnd, WM_PAINT, wParam, lParam);
-                InvalidateRect(hWnd, 0, 0);
-
-                break;
-
-            case VK_ESCAPE:                 //Нажата клавиша "Escape" 
-                SendMessage(hWnd, WM_DESTROY, 0, 0);
-                return 0; 
+        //default:
+        //    return DefWindowProc(hWnd, message, wParam, lParam);
         }
-        return 0;
 
-    case WM_DESTROY:
-        PostQuitMessage(0);
-        return 0;
-
-    //default:
-    //    return DefWindowProc(hWnd, message, wParam, lParam);
-    }
-
-    return DefWindowProc(hWnd, message, wParam, lParam);;
+        return DefWindowProc(hWnd, message, wParam, lParam);;
 }
 
 // Message handler for about box.
