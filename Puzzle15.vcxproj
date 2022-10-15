@@ -108,6 +108,7 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>WINMM.LIB;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -134,14 +135,50 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Puzzle15.c" />
-    <ClCompile Include="methods.c" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Puzzle15.rc" />
   </ItemGroup>
   <ItemGroup>
+    <Image Include="15.ico" />
+    <Image Include="15exe.ico" />
+    <Image Include="15exe2.ico" />
+    <Image Include="15exe3.ico" />
+    <Image Include="15exe4.ico" />
+    <Image Include="C:\Users\omilyukov\Documents\15.bmp" />
+    <Image Include="C:\Users\omilyukov\Documents\15.png" />
     <Image Include="Puzzle15.ico" />
     <Image Include="small.ico" />
+    <Image Include="sources\bitmap1.bmp" />
+    <Image Include="sources\bitmap2.bmp" />
+    <Image Include="sources\icon2.ico" />
+    <Image Include="sources\tile01.bmp" />
+    <Image Include="sources\tile02.bmp" />
+    <Image Include="sources\tile03.bmp" />
+    <Image Include="sources\tile04.bmp" />
+    <Image Include="sources\tile05.bmp" />
+    <Image Include="sources\tile06.bmp" />
+    <Image Include="sources\tile07.bmp" />
+    <Image Include="sources\tile08.bmp" />
+    <Image Include="sources\tile09.bmp" />
+    <Image Include="sources\tile1.bmp" />
+    <Image Include="sources\tile10.bmp" />
+    <Image Include="sources\tile11.bmp" />
+    <Image Include="sources\tile12.bmp" />
+    <Image Include="sources\tile13.bmp" />
+    <Image Include="sources\tile14.bmp" />
+    <Image Include="sources\tile15.bmp" />
+    <Image Include="sources\tile2.bmp" />
+    <Image Include="sources\tile3.bmp" />
+    <Image Include="sources\tile4.bmp" />
+    <Image Include="sources\tile5.bmp" />
+    <Image Include="sources\tile6.bmp" />
+    <Image Include="sources\tile7.bmp" />
+    <Image Include="sources\tile8.bmp" />
+    <Image Include="sources\tile9.bmp" />
+  </ItemGroup>
+  <ItemGroup>
+    <Media Include="sources\move.wav" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

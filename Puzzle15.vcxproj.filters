@@ -13,6 +13,9 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Resource Files\tile_pics">
+      <UniqueIdentifier>{ce4b04d2-e60b-4e1c-964f-cce0002c6409}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -32,9 +35,6 @@
     <ClCompile Include="Puzzle15.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="methods.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Puzzle15.rc">
@@ -48,5 +48,112 @@
     <Image Include="Puzzle15.ico">
       <Filter>Resource Files</Filter>
     </Image>
+    <Image Include="15.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="sources\tile01.bmp">
+      <Filter>Resource Files\tile_pics</Filter>
+    </Image>
+    <Image Include="sources\tile02.bmp">
+      <Filter>Resource Files\tile_pics</Filter>
+    </Image>
+    <Image Include="sources\tile03.bmp">
+      <Filter>Resource Files\tile_pics</Filter>
+    </Image>
+    <Image Include="sources\tile04.bmp">
+      <Filter>Resource Files\tile_pics</Filter>
+    </Image>
+    <Image Include="sources\tile05.bmp">
+      <Filter>Resource Files\tile_pics</Filter>
+    </Image>
+    <Image Include="sources\tile06.bmp">
+      <Filter>Resource Files\tile_pics</Filter>
+    </Image>
+    <Image Include="sources\tile07.bmp">
+      <Filter>Resource Files\tile_pics</Filter>
+    </Image>
+    <Image Include="sources\tile08.bmp">
+      <Filter>Resource Files\tile_pics</Filter>
+    </Image>
+    <Image Include="sources\tile09.bmp">
+      <Filter>Resource Files\tile_pics</Filter>
+    </Image>
+    <Image Include="sources\tile10.bmp">
+      <Filter>Resource Files\tile_pics</Filter>
+    </Image>
+    <Image Include="sources\tile11.bmp">
+      <Filter>Resource Files\tile_pics</Filter>
+    </Image>
+    <Image Include="sources\tile12.bmp">
+      <Filter>Resource Files\tile_pics</Filter>
+    </Image>
+    <Image Include="sources\tile13.bmp">
+      <Filter>Resource Files\tile_pics</Filter>
+    </Image>
+    <Image Include="sources\tile14.bmp">
+      <Filter>Resource Files\tile_pics</Filter>
+    </Image>
+    <Image Include="sources\tile15.bmp">
+      <Filter>Resource Files\tile_pics</Filter>
+    </Image>
+    <Image Include="C:\Users\omilyukov\Documents\15.bmp">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="C:\Users\omilyukov\Documents\15.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="sources\tile1.bmp">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="sources\icon2.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="sources\bitmap1.bmp">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="sources\bitmap2.bmp">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="sources\tile2.bmp">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="sources\tile3.bmp">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="sources\tile4.bmp">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="sources\tile5.bmp">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="sources\tile6.bmp">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="sources\tile7.bmp">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="sources\tile8.bmp">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="sources\tile9.bmp">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="15exe.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="15exe2.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="15exe3.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="15exe4.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <Media Include="sources\move.wav">
+      <Filter>Resource Files</Filter>
+    </Media>
   </ItemGroup>
 </Project>
