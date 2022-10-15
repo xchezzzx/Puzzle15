@@ -138,6 +138,18 @@
     <Image Include="sources\tile9.bmp">
       <Filter>Resource Files</Filter>
     </Image>
+    <Image Include="15exe.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="15exe2.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="15exe3.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="15exe4.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
   </ItemGroup>
   <ItemGroup>
     <Media Include="sources\move.wav">

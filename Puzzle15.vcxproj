@@ -141,6 +141,10 @@
   </ItemGroup>
   <ItemGroup>
     <Image Include="15.ico" />
+    <Image Include="15exe.ico" />
+    <Image Include="15exe2.ico" />
+    <Image Include="15exe3.ico" />
+    <Image Include="15exe4.ico" />
     <Image Include="C:\Users\omilyukov\Documents\15.bmp" />
     <Image Include="C:\Users\omilyukov\Documents\15.png" />
     <Image Include="Puzzle15.ico" />

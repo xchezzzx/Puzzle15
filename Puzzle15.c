@@ -5,6 +5,9 @@
 #include "commctrl.h"
 #include "Puzzle15.h"
 //#include "methods.c"
+#pragma comment(lib,"comctl32")
+////
+////#pragma comment(linker,"/manifestdependency:\"type='win64' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='x64' publicKeyToken='6595b64144ccf1df' language='*'\"") 
 
 #define MAX_LOADSTRING 100
 #define SIZE 16
@@ -13,6 +16,7 @@
 #define ID_RESTART 10001
 #define ID_QUIT 10002
 #define ID_SOLVE 10003
+#define ID_PRGBAR 10004
 #define DARKTHEME RGB(100, 100, 100)
 #define SLEEPTIMER 200
 
@@ -21,23 +25,18 @@ typedef struct
     RECT TileRect;
     HBITMAP Pic;
     int TileNum;
-    //wchar_t* TileName;
 } Tile;
 
 // Global Variables:
-
 
 HINSTANCE hInst;                                // current instance
 WCHAR szTitle[MAX_LOADSTRING] = L"The Puzzle of 15";                  // The title bar text
 WCHAR szWindowClass[MAX_LOADSTRING] = TEXT("GameWnd");            // the main window class name
 
-
+HWND hwndPrgBar, hwndMovesCount;
 
 RECT ClientArea;                    //size of client area in window
 Tile TilesArray[4][4];               //array of tiles for field
-
-//int FieldInt[4][4];                 //array of puzzle numbers
-Tile EmptyTile;
 int EmptyX, EmptyY;                     //coordinates of empty place
 int MovesCount = 0;                     //MovesCount - counter of moves done by player
 
@@ -177,6 +176,7 @@ void Move(enum Direction dir)
             PlaySound(MAKEINTRESOURCE(IDR_WAVE1), NULL, SND_RESOURCE | SND_ASYNC);
             EmptyY++;
             MovesCount++;
+
         }
         break;
 
@@ -199,7 +199,6 @@ void Move(enum Direction dir)
             TilesArray[EmptyX][EmptyY - 1] = TilesArray[EmptyX][EmptyY];
             TilesArray[EmptyX][EmptyY] = TempTile;
             PlaySound(MAKEINTRESOURCE(IDR_WAVE1), NULL, SND_RESOURCE | SND_ASYNC);
-
             EmptyY--;
             MovesCount++;
         }
@@ -232,9 +231,23 @@ BOOL FieldIsCorrect()
             counter++;
         }
     }
-    Victory = 42;
-
     return TRUE;
+}
+
+void CheckForProgress()
+{
+    SendMessage(hwndPrgBar, PBM_SETPOS, 0, 0);
+
+    for (int i = 0; i < 4; i++)
+    {
+        for (int j = 0; j < 4; j++)
+        {
+            if (TilesArray[i][j].TileNum == 1 + j + 4 * i)
+            {
+                SendMessage(hwndPrgBar, PBM_STEPIT, 0, 0);
+            }
+        }
+    }
 }
 
 void DrawField(HDC hdc)
@@ -260,7 +273,7 @@ void DrawField(HDC hdc)
 
     SelectObject(hdcMem, memBM);
 
-    wchar_t bufer[10];
+    //wchar_t bufer[10];
 
     SelectObject(hdc, GetStockObject(DC_BRUSH));
     SetDCBrushColor(hdc, DARKTHEME);
@@ -277,6 +290,7 @@ void DrawField(HDC hdc)
                 GetObject(TilesArray[i][j].Pic, sizeof(bitmap), &bitmap);
                 BitBlt(hdc, TilesArray[i][j].TileRect.left, TilesArray[i][j].TileRect.top, bitmap.bmWidth, bitmap.bmHeight,
                     hdcMem, 0, 0, SRCCOPY);
+
 
                 //wsprintf(bufer, TEXT("%i"), TilesArray[i][j].TileNum);
 
@@ -296,7 +310,7 @@ void DrawField(HDC hdc)
 
     holdFont = SelectObject(hdc, hFont1);
 
-    wsprintf(bufer1, TEXT("LEFT: %i"), TilesArray[EmptyX][EmptyY].TileRect.left);
+    wsprintf(bufer1, TEXT("LEFT: %i\0"), TilesArray[EmptyX][EmptyY].TileRect.left);
     wsprintf(bufer2, TEXT("TOP: %i"), TilesArray[EmptyX][EmptyY].TileRect.top);
     wsprintf(bufer3, TEXT("RIGHT: %i"), TilesArray[EmptyX][EmptyY].TileRect.right);
     wsprintf(bufer4, TEXT("BOTTOM: %i"), TilesArray[EmptyX][EmptyY].TileRect.bottom);
@@ -354,6 +368,8 @@ int WINAPI wWinMain(
 
     HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_PUZZLE15));
 
+
+
     // Main message loop:
     //while (1)
     //{
@@ -396,6 +412,8 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 {
     WNDCLASSEXW wcex;
 
+
+
     wcex.cbSize = sizeof(WNDCLASSEX);
 
     wcex.style = CS_HREDRAW | CS_VREDRAW;
@@ -403,12 +421,14 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
     wcex.cbClsExtra = 0;
     wcex.cbWndExtra = 0;
     wcex.hInstance = hInstance;
-    wcex.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_ICON1));
+    wcex.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_ICON5));
     wcex.hCursor = LoadCursor(NULL, IDC_HAND);
     wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW);
     wcex.lpszMenuName = MAKEINTRESOURCEW(IDC_PUZZLE15);
     wcex.lpszClassName = szWindowClass;
-    wcex.hIconSm = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_ICON1));
+    wcex.hIconSm = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_ICON5));
+
+
 
     return RegisterClassExW(&wcex);
 }
@@ -445,6 +465,9 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
         return FALSE;
     }
 
+    //SendMessage(hWnd, WM_SETICON, ICON_BIG, (LONG)LoadIcon(hInstance, MAKEINTRESOURCE(IDI_ICON3)));
+    //SendMessage(hWnd, WM_SETICON, ICON_SMALL, (LONG)LoadIcon(hInstance, MAKEINTRESOURCE(IDI_ICON3)));
+
     ShowWindow(hWnd, nCmdShow);
     UpdateWindow(hWnd);
 
@@ -463,9 +486,15 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 //
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-    HWND restart, moveCount, textMoves;
     PAINTSTRUCT ps;
     HDC hdc;
+
+    //INITCOMMONCONTROLSEX InitCtrlEx;
+
+    //InitCtrlEx.dwSize = sizeof(INITCOMMONCONTROLSEX);
+    //InitCtrlEx.dwICC = ICC_PROGRESS_CLASS;
+    //InitCommonControlsEx(&InitCtrlEx);
+
 
     int xMouse;
     int yMouse;
@@ -478,6 +507,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
             GenerateField();
             CreateField();
+            InitCommonControls();
 
             CreateWindowW(
                 L"button", L"Solve",
@@ -486,7 +516,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 hWnd, (HMENU)ID_SOLVE, NULL, NULL);
 
             CreateWindowW(
-                L"button", L"Restart game",
+                L"button", L"Restart",
                 WS_VISIBLE | WS_CHILD,
                 400, 800, WIDTH, WIDTH / 2,
                 hWnd, (HMENU) ID_RESTART, NULL, NULL);
@@ -496,6 +526,20 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 WS_VISIBLE | WS_CHILD,
                 600, 800, WIDTH, WIDTH / 2,
                 hWnd, (HMENU) ID_QUIT, NULL, NULL);
+
+            hwndMovesCount = CreateWindow(
+                WC_STATIC, L"Press any arrow",
+                WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE,
+                0, 800, WIDTH, 3 * WIDTH / 8, hWnd, (HMENU)10003, hInst, NULL);
+
+            hwndPrgBar = CreateWindowEx(0, 
+                PROGRESS_CLASS, NULL,
+                WS_CHILD | WS_VISIBLE | PBS_SMOOTH,
+                0, 875, WIDTH, WIDTH / 8, hWnd, (HMENU)ID_PRGBAR, hInst, NULL);
+
+            SendMessage(hwndPrgBar, PBM_SETRANGE, 0, MAKELPARAM(0, 16));
+            SendMessage(hwndPrgBar, PBM_SETSTEP, (WPARAM)1, 0);
+            SendMessage(hwndPrgBar, PBM_SETPOS, 0, 0);
 
             return 0;
 
@@ -507,13 +551,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             //xMouse = LOWORD(lParam);
             //yMouse = HIWORD(lParam);
 
-
         case WM_LBUTTONDOWN:
         {
             xMouse = LOWORD(lParam);
             yMouse = HIWORD(lParam);
 
-            //if ((400 <= xMouse) && (xMouse <= 600) && (600 <= yMouse) && (yMouse <= 800))
+            //if ((400 <= xMouse) && (xMouse <= 600) && (600 <= yMouse) && (yMouse <= 800)) 100 < x < 200
 
 
             if ((TilesArray[EmptyX][EmptyY + 1].TileRect.left <= xMouse) && (xMouse <= TilesArray[EmptyX][EmptyY + 1].TileRect.right) &&
@@ -559,10 +602,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             {
             case ID_RESTART:
                 MovesCount = 0;
-                //GenerateField();
-                //CreateField();
-
-
                 SendMessage(hWnd, WM_CREATE, 0, 0);
                 SendMessage(hWnd, WM_PAINT, 0, 0);
 
@@ -604,21 +643,25 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
         case WM_PAINT:
         {
-            InvalidateRect(hWnd, &ClientArea, 0);
+            InvalidateRect(hWnd, 0, 0);
 
             hdc = BeginPaint(hWnd, &ps);
 
             // TODO: Add any drawing code that uses hdc here...
 
             DrawField(hdc);
+            
 
-            wsprintf(bufer7, TEXT("Moves made:\n %i"), MovesCount);
 
-            CreateWindowW(WC_STATIC, bufer7, WS_CHILD | WS_VISIBLE
-                | SS_CENTER | SS_CENTERIMAGE, 0, 800, WIDTH, WIDTH / 2, hWnd, (HMENU)10003, NULL, NULL);
 
-            InvalidateRect(hWnd, 0, 0);
 
+            //CreateWindow(WC_STATIC, bufer7, WS_CHILD | WS_VISIBLE
+                //| SS_CENTER | SS_CENTERIMAGE, 0, 800, WIDTH, 3 * WIDTH / 8, hWnd, (HMENU)10003, NULL, NULL);
+
+
+
+
+            InvalidateRect(hWnd, &ClientArea, 0);
             EndPaint(hWnd, &ps);
         }
         break;
@@ -631,7 +674,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                     Move(LEFT);
                     CreateField();
                     //FieldIsCorrect();
-
+                    wsprintf(bufer7, TEXT("Moves made:\n %i"), MovesCount);
+                    SendMessageW(hwndMovesCount, WM_SETTEXT, (WPARAM)NULL, (LPARAM)bufer7);
+                    CheckForProgress();
                     SendMessage(hWnd, WM_PAINT, wParam, lParam);
                     InvalidateRect(hWnd, 0, 0);
                     Sleep(SLEEPTIMER);
@@ -640,6 +685,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 case VK_UP:                     //Нажата клавиша "Вверх"
                     Move(UP);
                     CreateField();
+                    wsprintf(bufer7, TEXT("Moves made:\n %i"), MovesCount);
+                    SendMessageW(hwndMovesCount, WM_SETTEXT, (WPARAM)NULL, (LPARAM)bufer7);
+                    CheckForProgress();
                     SendMessage(hWnd, WM_PAINT, wParam, lParam);
                     InvalidateRect(hWnd, 0, 0);
                     Sleep(SLEEPTIMER);
@@ -649,6 +697,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 case VK_RIGHT:                  //Нажата клавиша "Вправо"
                     Move(RIGHT);
                     CreateField();
+
+                    wsprintf(bufer7, TEXT("Moves made:\n %i"), MovesCount);
+                    SendMessageW(hwndMovesCount, WM_SETTEXT, (WPARAM)NULL, (LPARAM)bufer7);
+                    CheckForProgress();
                     SendMessage(hWnd, WM_PAINT, wParam, lParam);
                     InvalidateRect(hWnd, 0, 0);
                     Sleep(SLEEPTIMER);
@@ -658,6 +710,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 case VK_DOWN:                   //Нажата клавиша "Вниз"
                     Move(DOWN);
                     CreateField();
+                    wsprintf(bufer7, TEXT("Moves made:\n %i"), MovesCount);
+                    SendMessageW(hwndMovesCount, WM_SETTEXT, (WPARAM)NULL, (LPARAM)bufer7);
+                    CheckForProgress();
                     SendMessage(hWnd, WM_PAINT, wParam, lParam);
                     InvalidateRect(hWnd, 0, 0);
                     Sleep(SLEEPTIMER);
@@ -684,7 +739,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                     hWnd,
                     (LPCWSTR)L"Wow! Congratulations!\nWanna once more?",
                     (LPCWSTR)L"Puzzle 15",
-                    MB_ICONWARNING | MB_YESNO | MB_DEFBUTTON1);
+                    MB_ICONEXCLAMATION | MB_YESNO | MB_DEFBUTTON1);
 
                 switch (msgboxID)
                 {
