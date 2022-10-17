@@ -48,9 +48,6 @@
     <Image Include="Puzzle15.ico">
       <Filter>Resource Files</Filter>
     </Image>
-    <Image Include="15.ico">
-      <Filter>Resource Files</Filter>
-    </Image>
     <Image Include="sources\tile01.bmp">
       <Filter>Resource Files\tile_pics</Filter>
     </Image>
@@ -96,58 +93,7 @@
     <Image Include="sources\tile15.bmp">
       <Filter>Resource Files\tile_pics</Filter>
     </Image>
-    <Image Include="C:\Users\omilyukov\Documents\15.bmp">
-      <Filter>Resource Files</Filter>
-    </Image>
-    <Image Include="C:\Users\omilyukov\Documents\15.png">
-      <Filter>Resource Files</Filter>
-    </Image>
-    <Image Include="sources\tile1.bmp">
-      <Filter>Resource Files</Filter>
-    </Image>
-    <Image Include="sources\icon2.ico">
-      <Filter>Resource Files</Filter>
-    </Image>
-    <Image Include="sources\bitmap1.bmp">
-      <Filter>Resource Files</Filter>
-    </Image>
-    <Image Include="sources\bitmap2.bmp">
-      <Filter>Resource Files</Filter>
-    </Image>
-    <Image Include="sources\tile2.bmp">
-      <Filter>Resource Files</Filter>
-    </Image>
-    <Image Include="sources\tile3.bmp">
-      <Filter>Resource Files</Filter>
-    </Image>
-    <Image Include="sources\tile4.bmp">
-      <Filter>Resource Files</Filter>
-    </Image>
-    <Image Include="sources\tile5.bmp">
-      <Filter>Resource Files</Filter>
-    </Image>
-    <Image Include="sources\tile6.bmp">
-      <Filter>Resource Files</Filter>
-    </Image>
-    <Image Include="sources\tile7.bmp">
-      <Filter>Resource Files</Filter>
-    </Image>
-    <Image Include="sources\tile8.bmp">
-      <Filter>Resource Files</Filter>
-    </Image>
-    <Image Include="sources\tile9.bmp">
-      <Filter>Resource Files</Filter>
-    </Image>
-    <Image Include="15exe.ico">
-      <Filter>Resource Files</Filter>
-    </Image>
-    <Image Include="15exe2.ico">
-      <Filter>Resource Files</Filter>
-    </Image>
     <Image Include="15exe3.ico">
-      <Filter>Resource Files</Filter>
-    </Image>
-    <Image Include="15exe4.ico">
       <Filter>Resource Files</Filter>
     </Image>
   </ItemGroup>

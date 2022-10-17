@@ -154,8 +154,9 @@ void CreateField()
                 TilesArray[i][j].TileRect.right = SPACE * (j + 1) + WIDTH * (j + 1);
                 TilesArray[i][j].TileRect.bottom = SPACE * (i + 1) + WIDTH * (i + 1);
 
-                wsprintf(bufer, TEXT("d:\\sources\\C\\Puzzle15\\sources\\tile%i.bmp"), TilesArray[i][j].TileNum);
-                TilesArray[i][j].Pic = LoadImageW(hInst, bufer, IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+                //wsprintf(bufer, TEXT("d:\\sources\\C\\Puzzle15\\sources\\tile%i.bmp"), TilesArray[i][j].TileNum);
+
+                TilesArray[i][j].Pic = LoadImage(hInst, IDB_BITMAP1 + TilesArray[i][j].TileNum - 1, IMAGE_BITMAP, 0, 0, LR_COPYFROMRESOURCE);
             }
         }
     }
@@ -236,18 +237,21 @@ BOOL FieldIsCorrect()
 
 void CheckForProgress()
 {
-    SendMessage(hwndPrgBar, PBM_SETPOS, 0, 0);
+    int counter = 0;
 
     for (int i = 0; i < 4; i++)
     {
         for (int j = 0; j < 4; j++)
         {
-            if (TilesArray[i][j].TileNum == 1 + j + 4 * i)
+            if ((TilesArray[i][j].TileNum == 1 + j + 4 * i) && TilesArray[i][j].TileNum != 16)
             {
-                SendMessage(hwndPrgBar, PBM_STEPIT, 0, 0);
+                counter++;
             }
         }
     }
+
+    SendMessage(hwndPrgBar, PBM_SETPOS, counter, 0);
+
 }
 
 void DrawField(HDC hdc)
@@ -255,25 +259,12 @@ void DrawField(HDC hdc)
     BITMAP bitmap;
     HGDIOBJ oldBitmap;
 
-    HFONT hFont1, hFont2, holdFont;
-    wchar_t bufer1[30];
-    wchar_t bufer2[30];
-    wchar_t bufer3[30];
-    wchar_t bufer4[30];
-    wchar_t bufer5[30];
-    wchar_t bufer6[30];
-    wchar_t bufer7[30];
-    wchar_t bufer8[30];
-
-    wchar_t buferX[30];
-    wchar_t buferY[30];
+    wchar_t bufer[3];
 
     HDC hdcMem = CreateCompatibleDC(hdc);
     HBITMAP memBM = CreateCompatibleBitmap(hdc, ClientArea.right - ClientArea.left, ClientArea.bottom - ClientArea.top);
 
     SelectObject(hdcMem, memBM);
-
-    //wchar_t bufer[10];
 
     SelectObject(hdc, GetStockObject(DC_BRUSH));
     SetDCBrushColor(hdc, DARKTHEME);
@@ -302,41 +293,6 @@ void DrawField(HDC hdc)
             }
         }
     }
-
-    //SetBkColor(hdc, DARKTHEME);
-
-    hFont1 = CreateFontW(28, 0, 0, 0, FW_SEMIBOLD, 0, 0, 0, 0, 0, 0, 0, 0, L"CourierNew");
-    hFont2 = CreateFontW(42, 0, 0, 0, FW_SEMIBOLD, 0, 0, 0, 0, 0, 0, 0, 0, L"CourierNew");
-
-    holdFont = SelectObject(hdc, hFont1);
-
-    wsprintf(bufer1, TEXT("LEFT: %i\0"), TilesArray[EmptyX][EmptyY].TileRect.left);
-    wsprintf(bufer2, TEXT("TOP: %i"), TilesArray[EmptyX][EmptyY].TileRect.top);
-    wsprintf(bufer3, TEXT("RIGHT: %i"), TilesArray[EmptyX][EmptyY].TileRect.right);
-    wsprintf(bufer4, TEXT("BOTTOM: %i"), TilesArray[EmptyX][EmptyY].TileRect.bottom);
-    wsprintf(bufer5, TEXT("EmptyX: %i"), EmptyX);
-    wsprintf(bufer6, TEXT("EmptyY: %i"), EmptyY);
-    wsprintf(bufer8, TEXT("Status: %i"), Victory);
-
-    DeleteObject(holdFont);
-
-    holdFont = SelectObject(hdc, hFont2);
-
-    wsprintf(bufer7, TEXT("%i"), MovesCount);
-
-
-    TextOutW(hdc, 900, 200, bufer1, lstrlen(bufer1));
-    TextOutW(hdc, 900, 250, bufer2, lstrlen(bufer2));
-    TextOutW(hdc, 1100, 200, bufer3, lstrlen(bufer3));
-    TextOutW(hdc, 1100, 250, bufer4, lstrlen(bufer4));
-    TextOutW(hdc, 900, 300, bufer5, lstrlen(bufer5));
-    TextOutW(hdc, 900, 350, bufer6, lstrlen(bufer6));
-    //TextOutW(hdc, 0, 800, bufer7, lstrlen(bufer7));
-    TextOutW(hdc, 900, 400, bufer8, lstrlen(bufer8));
-
-    TextOutW(hdc, 1100, 300, buferX, lstrlen(buferX));
-    TextOutW(hdc, 1100, 350, buferY, lstrlen(buferY));
-
 
     //BitBlt(hdc, 0, 0, ClientArea.right - ClientArea.left, ClientArea.bottom - ClientArea.top, hdcMem, 0, 0, SRCCOPY);
     DeleteDC(hdcMem);
@@ -488,25 +444,20 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     PAINTSTRUCT ps;
     HDC hdc;
+    HFONT hFont, holdFont;
 
-    //INITCOMMONCONTROLSEX InitCtrlEx;
+    wchar_t buf[30];
 
-    //InitCtrlEx.dwSize = sizeof(INITCOMMONCONTROLSEX);
-    //InitCtrlEx.dwICC = ICC_PROGRESS_CLASS;
-    //InitCommonControlsEx(&InitCtrlEx);
-
-
-    int xMouse;
-    int yMouse;
-
-    wchar_t bufer7[30];
+    int xMouse, yMouse;
 
     switch (message)
     {
         case WM_CREATE:
 
+
             GenerateField();
             CreateField();
+            CheckForProgress();
             InitCommonControls();
 
             CreateWindowW(
@@ -537,7 +488,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 WS_CHILD | WS_VISIBLE | PBS_SMOOTH,
                 0, 875, WIDTH, WIDTH / 8, hWnd, (HMENU)ID_PRGBAR, hInst, NULL);
 
-            SendMessage(hwndPrgBar, PBM_SETRANGE, 0, MAKELPARAM(0, 16));
+            SendMessage(hwndPrgBar, PBM_SETRANGE, 0, MAKELPARAM(0, 15));
             SendMessage(hwndPrgBar, PBM_SETSTEP, (WPARAM)1, 0);
             SendMessage(hwndPrgBar, PBM_SETPOS, 0, 0);
 
@@ -647,20 +598,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
             hdc = BeginPaint(hWnd, &ps);
 
-            // TODO: Add any drawing code that uses hdc here...
+            hFont = CreateFontW(28, 0, 0, 0, FW_SEMIBOLD, 0, 0, 0, 0, 0, 0, 0, 0, L"Calibri");
+
+            holdFont = SelectObject(hdc, hFont);
+
 
             DrawField(hdc);
-            
-
-
-
-
-            //CreateWindow(WC_STATIC, bufer7, WS_CHILD | WS_VISIBLE
-                //| SS_CENTER | SS_CENTERIMAGE, 0, 800, WIDTH, 3 * WIDTH / 8, hWnd, (HMENU)10003, NULL, NULL);
-
-
-
-
             InvalidateRect(hWnd, &ClientArea, 0);
             EndPaint(hWnd, &ps);
         }
@@ -673,9 +616,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 case VK_LEFT:
                     Move(LEFT);
                     CreateField();
-                    //FieldIsCorrect();
-                    wsprintf(bufer7, TEXT("Moves made:\n %i"), MovesCount);
-                    SendMessageW(hwndMovesCount, WM_SETTEXT, (WPARAM)NULL, (LPARAM)bufer7);
+                    wsprintf(buf, TEXT("Moves made:\n %i"), MovesCount);
+                    SendMessageW(hwndMovesCount, WM_SETTEXT, (WPARAM)NULL, (LPARAM)buf);
                     CheckForProgress();
                     SendMessage(hWnd, WM_PAINT, wParam, lParam);
                     InvalidateRect(hWnd, 0, 0);
@@ -685,8 +627,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 case VK_UP:                     //Нажата клавиша "Вверх"
                     Move(UP);
                     CreateField();
-                    wsprintf(bufer7, TEXT("Moves made:\n %i"), MovesCount);
-                    SendMessageW(hwndMovesCount, WM_SETTEXT, (WPARAM)NULL, (LPARAM)bufer7);
+                    wsprintf(buf, TEXT("Moves made:\n %i"), MovesCount);
+                    SendMessageW(hwndMovesCount, WM_SETTEXT, (WPARAM)NULL, (LPARAM)buf);
                     CheckForProgress();
                     SendMessage(hWnd, WM_PAINT, wParam, lParam);
                     InvalidateRect(hWnd, 0, 0);
@@ -698,8 +640,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                     Move(RIGHT);
                     CreateField();
 
-                    wsprintf(bufer7, TEXT("Moves made:\n %i"), MovesCount);
-                    SendMessageW(hwndMovesCount, WM_SETTEXT, (WPARAM)NULL, (LPARAM)bufer7);
+                    wsprintf(buf, TEXT("Moves made:\n %i"), MovesCount);
+                    SendMessageW(hwndMovesCount, WM_SETTEXT, (WPARAM)NULL, (LPARAM)buf);
                     CheckForProgress();
                     SendMessage(hWnd, WM_PAINT, wParam, lParam);
                     InvalidateRect(hWnd, 0, 0);
@@ -710,8 +652,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 case VK_DOWN:                   //Нажата клавиша "Вниз"
                     Move(DOWN);
                     CreateField();
-                    wsprintf(bufer7, TEXT("Moves made:\n %i"), MovesCount);
-                    SendMessageW(hwndMovesCount, WM_SETTEXT, (WPARAM)NULL, (LPARAM)bufer7);
+                    wsprintf(buf, TEXT("Moves made:\n %i"), MovesCount);
+                    SendMessageW(hwndMovesCount, WM_SETTEXT, (WPARAM)NULL, (LPARAM)buf);
                     CheckForProgress();
                     SendMessage(hWnd, WM_PAINT, wParam, lParam);
                     InvalidateRect(hWnd, 0, 0);
