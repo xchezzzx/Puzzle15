@@ -8,8 +8,6 @@
 #define IDD_ABOUTBOX                    103
 #define IDM_ABOUT                       104
 #define IDM_EXIT                        105
-#define IDI_PUZZLE15                    107
-#define IDI_SMALL                       108
 #define IDC_PUZZLE15                    109
 #define IDR_MAINFRAME                   128
 #define IDR_MEDIA1                      153
