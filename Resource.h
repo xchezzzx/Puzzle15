@@ -29,6 +29,10 @@
 #define IDB_BITMAP13                    172
 #define IDB_BITMAP14                    173
 #define IDB_BITMAP15                    174
+#define ID_FILE_RESTART                 32771
+#define ID_FILE_SOLVE                   32772
+#define IDM_FILE_SOLVE                  32773
+#define IDM_FILE_RESTART                32774
 #define IDC_STATIC                      -1
 
 // Next default values for new objects
@@ -37,7 +41,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        175
-#define _APS_NEXT_COMMAND_VALUE         32771
+#define _APS_NEXT_COMMAND_VALUE         32775
 #define _APS_NEXT_CONTROL_VALUE         1000
 #define _APS_NEXT_SYMED_VALUE           110
 #endif

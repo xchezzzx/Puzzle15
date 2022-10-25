@@ -324,39 +324,24 @@ int WINAPI wWinMain(
 
     HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_PUZZLE15));
 
-
-
     // Main message loop:
-    //while (1)
-    //{
-    //    if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
-    //    {
-    //        if (msg.message == WM_QUIT) break;
-    //        TranslateMessage(&msg);
-    //        DispatchMessage(&msg);
-    //    }
-    //    else
-    //    {
-
-    //    }
-    //}
-
-    //while (GetMessage(&msg, NULL, 0, 0))
-    //{
-    //    if (!TranslateAccelerator(msg.hwnd, hAccelTable, &msg))
-    //    {
-    //        TranslateMessage(&msg);
-    //        DispatchMessage(&msg);
-    //    }
-    //}
 
     while (GetMessage(&msg, NULL, 0, 0))
     {
-        TranslateMessage(&msg);
-        DispatchMessage(&msg);
+        if (!TranslateAccelerator(msg.hwnd, hAccelTable, &msg))
+        {
+            TranslateMessage(&msg);
+            DispatchMessage(&msg);
+        }
     }
 
-    return (int)msg.wParam;
+    //while (GetMessage(&msg, NULL, 0, 0))
+    //{
+    //    TranslateMessage(&msg);
+    //    DispatchMessage(&msg);
+    //}
+
+    //return (int)msg.wParam;
 }
 
 //
@@ -454,36 +439,35 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     {
         case WM_CREATE:
 
-
             GenerateField();
             CreateField();
             CheckForProgress();
             InitCommonControls();
 
-            CreateWindowW(
+            CreateWindowW(                                      //"Solve" button
                 L"button", L"Solve",
                 WS_VISIBLE | WS_CHILD,
                 200, 800, WIDTH, WIDTH / 2,
                 hWnd, (HMENU)ID_SOLVE, NULL, NULL);
 
-            CreateWindowW(
+            CreateWindowW(                                      //"Restart" button
                 L"button", L"Restart",
                 WS_VISIBLE | WS_CHILD,
                 400, 800, WIDTH, WIDTH / 2,
                 hWnd, (HMENU) ID_RESTART, NULL, NULL);
 
-            CreateWindowW(
+            CreateWindowW(                                      //"Quit" button
                 L"button", L"Quit",
                 WS_VISIBLE | WS_CHILD,
                 600, 800, WIDTH, WIDTH / 2,
                 hWnd, (HMENU) ID_QUIT, NULL, NULL);
 
-            hwndMovesCount = CreateWindow(
+            hwndMovesCount = CreateWindow(                      //Static field fot moves counter
                 WC_STATIC, L"Press any arrow",
                 WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE,
                 0, 800, WIDTH, 3 * WIDTH / 8, hWnd, (HMENU)10003, hInst, NULL);
 
-            hwndPrgBar = CreateWindowEx(0, 
+            hwndPrgBar = CreateWindowEx(0,                      //Progress bar to show a progress of the solving puzzle
                 PROGRESS_CLASS, NULL,
                 WS_CHILD | WS_VISIBLE | PBS_SMOOTH,
                 0, 875, WIDTH, WIDTH / 8, hWnd, (HMENU)ID_PRGBAR, hInst, NULL);
@@ -537,18 +521,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         }
         break;
 
-        //case WM_NOTIFY:
-           // const int asize = 4;
-            //wchar_t buf[4];
-            //size_t cbDest = asize * sizeof(wchar_t);
-            //StringCbPrintfW(buf, cbDest, L"%d", movesCount);
-
-            //SetWindowTextW(textMoves, buf);
-
-        case WM_COMMAND:
+        case WM_COMMAND:                                // Parse the menu selections:
         {
             int wmId = LOWORD(wParam);
-            // Parse the menu selections:
+            
             switch (wmId)
             {
             case ID_RESTART:
@@ -577,6 +553,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             case ID_QUIT:
                 SendMessage(hWnd, WM_DESTROY, 0, 0);
                 return 0;
+
+            case IDM_FILE_SOLVE:
+                SendMessage(hWnd, WM_COMMAND, ID_SOLVE, 0);
+                break;
+
+            case IDM_FILE_RESTART:
+                SendMessage(hWnd, WM_COMMAND, ID_RESTART, 0);
+                break;
 
             case IDM_ABOUT:
                 DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
@@ -611,9 +595,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
         case WM_KEYDOWN:
 
-            switch (wParam)                              //В зависимости от нажатой клавиши (от ее целочисленного кода) двигаем костяшки
+            switch (wParam)                              //Parse the arrow pressed and making the appropriate move
             {
-                case VK_LEFT:
+                case VK_LEFT:                           //Arrow Left pressed
                     Move(LEFT);
                     CreateField();
                     wsprintf(buf, TEXT("Moves made:\n %i"), MovesCount);
@@ -624,7 +608,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                     Sleep(SLEEPTIMER);
                 break;
 
-                case VK_UP:                     //Нажата клавиша "Вверх"
+                case VK_UP:                             //Arrow Up pressed
                     Move(UP);
                     CreateField();
                     wsprintf(buf, TEXT("Moves made:\n %i"), MovesCount);
@@ -636,7 +620,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
                 break;
                  
-                case VK_RIGHT:                  //Нажата клавиша "Вправо"
+                case VK_RIGHT:                          //Arrow Right pressed
                     Move(RIGHT);
                     CreateField();
 
@@ -649,7 +633,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
                 break;
 
-                case VK_DOWN:                   //Нажата клавиша "Вниз"
+                case VK_DOWN:                          //Arrow Down pressed
                     Move(DOWN);
                     CreateField();
                     wsprintf(buf, TEXT("Moves made:\n %i"), MovesCount);
@@ -661,21 +645,21 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
                 break;
 
-                case VK_SPACE:
+                case VK_SPACE:                          //In case of Space is pressed - restart the game
                     SolvePuzzle();
                     CreateField();
                     SendMessage(hWnd, WM_PAINT, 0, 0);
                     InvalidateRect(hWnd, 0, 0);
                     break;
 
-                case VK_ESCAPE:                 //Нажата клавиша "Escape" 
+                case VK_ESCAPE:                         //In case of ESC pressed - close the window and exit 
                     SendMessage(hWnd, WM_CREATE, 0, 0);
                     SendMessage(hWnd, WM_PAINT, 0, 0);
                     InvalidateRect(hWnd, 0, 0);
                 break; 
             }
 
-            if (FieldIsCorrect())
+            if (FieldIsCorrect())                       //Checking if the field is correct and if so - the message box with grats and 2 buttons is appeared
             {
                 int msgboxID = MessageBox(
                     hWnd,
@@ -685,7 +669,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
                 switch (msgboxID)
                 {
-                    case IDYES:
+                    case IDYES:                         //Yes button - restarting a game
                     {
                         SendMessage(hWnd, WM_CREATE, 0, 0);
                         SendMessage(hWnd, WM_PAINT, 0, 0);
@@ -693,7 +677,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                     }
                         break;
 
-                    case IDNO:
+                    case IDNO:                          //No button - close & exit
                         SendMessage(hWnd, WM_DESTROY, 0, 0);
                         break;
                     }
